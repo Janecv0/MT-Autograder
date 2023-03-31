@@ -5,7 +5,7 @@
     pytest, unittest, nose, doctest, Robot Framework => pytest
 
 ## Possible architecture:
-Ask the user for the folder location where the student's code and test files are stored.
+Ask the user for the folder location where the student's code and test files are stored. Use `argparse` for further info (do plagiatorism check, type of output,...)
   
 With use of the `os` module navigate to the folder and list all the .py files in the folder.
   
