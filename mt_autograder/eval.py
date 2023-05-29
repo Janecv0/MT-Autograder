@@ -23,6 +23,8 @@ def get_grade(score):
         return 'C'
     elif score >= 60:
         return 'D'
+    elif score >= 50:
+        return 'E'
     else:
         return 'F'
     

@@ -11,13 +11,14 @@ command = f"pytest -v -s --log-file={log_name}"
 result = subprocess.run(command, shell=True, capture_output=True, text=True)
 
 # print the captured output (mostly for debugging purposes)
-#print(result.stdout)
+# print(result.stdout)
 
 # write the captured output to a file
 with open(f"{log_name}", "w") as log_file:
     log_file.write(result.stdout)
 
 regex_output = output_regex(f'{log_name}')
+
 if regex_output == {}:
     print("No tests run")
     exit()
