@@ -2,13 +2,13 @@ import importlib
 import os
 import json
 
-with open('hw_name.json') as f:
+with open("hw_name.json") as f:
     hw_name = json.load(f)
 
-os.remove('hw_name.json')
+os.remove("hw_name.json")
 
 try:
-    HW = importlib.import_module(hw_name['filename'])
+    HW = importlib.import_module(hw_name["filename"])
 except ImportError:
     print(f"Failed to import module {hw_name}.")
 

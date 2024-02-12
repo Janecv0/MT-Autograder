@@ -5,11 +5,14 @@ from subprocess import DEVNULL
 
 # Run pytest with --json-report option
 def run_tests(test_n: int, user: str):
+    """Run the tests and return the grade and the points."""
+
+    # give the filename to the test file for the import
     json_filename = f"{user}_HW_{test_n}_report.json"
     hw_filename = f"HW_{test_n}_{user}"
-    with open('hw_name.json', "w") as f:
-        json.dump({"filename": hw_filename}, f)     
-        
+    with open("hw_name.json", "w") as f:
+        json.dump({"filename": hw_filename}, f)
+
     subprocess.run(
         [
             "pytest",
@@ -52,7 +55,7 @@ def get_points_from_test(test):
 
 
 def mark_test(pass_points, fail_points, letter_grade=False):
-    # ECTS grading system
+    """ECTS grading system"""
     if (pass_points + fail_points) == 0:
         return None
     else:
@@ -93,10 +96,12 @@ def how_did_we_do(tests, print_to_terminal: bool):
             f"Grade: {mark_test(pass_points,fail_points,False)}, total_points: {pass_points} passed, {fail_points} failed"
         )
 
-    return {'mark': mark_test(pass_points,fail_points,False),
-            'pass_points': pass_points,
-            "failed_points": fail_points}
+    return {
+        "mark": mark_test(pass_points, fail_points, False),
+        "pass_points": pass_points,
+        "failed_points": fail_points,
+    }
 
 
 if __name__ == "__main__":
-    run_tests(1, "jan")
+    print(run_tests(1, "fake"))

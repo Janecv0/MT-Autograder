@@ -239,8 +239,6 @@ def update_user(
     return crud.update_user(db=db, user=user, user_id=user_id)
 
 
-
-
 def create_item(
     item: schemas.ItemCreate,
     current_user: Annotated[schemas.User, Depends(get_current_active_user)],
@@ -256,6 +254,7 @@ def create_item(
             db=db, item=item, user_id=current_user.id, filename=filename
         )
 
+
 @app.delete("/items/{item_id}")
 def delete_item(
     item_id: int,
@@ -267,6 +266,7 @@ def delete_item(
         raise HTTPException(status_code=401, detail="Not enough permissions")
     return crud.delete_item(db=db, item_id=item_id)
 
+
 @app.delete("/users/{user_id}")
 def delete_user(
     user_id: int,
@@ -276,6 +276,7 @@ def delete_user(
     if not crud.is_teacher(db, current_user.id) and user_id != current_user.id:
         raise HTTPException(status_code=401, detail="Not enough permissions")
     return crud.delete_user(db=db, user_id=user_id)
+
 
 """File upload"""
 
@@ -314,13 +315,18 @@ async def create_upload_file(
 async def run(
     test_n: int,
     current_user: Annotated[schemas.User, Depends(get_current_active_user)],
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     resultfunc = run_tests(test_n, current_user.username)
-    passed = True if resultfunc["mark"]>=50 else False
+    passed = True if resultfunc["mark"] >= 50 else False
     crud.update_item(
         db=db,
         item_id=crud.get_item(db, f"HW_{test_n}_{current_user.username}").id,
-        tested=True, passed=passed, mark=resultfunc["mark"], pass_point=resultfunc["pass_points"], fail_point=resultfunc["failed_points"]),
-    
+        tested=True,
+        passed=passed,
+        mark=resultfunc["mark"],
+        pass_point=resultfunc["pass_points"],
+        fail_point=resultfunc["failed_points"],
+    ),
+
     return {"result": resultfunc}

@@ -56,6 +56,7 @@ def get_items(db: Session, skip: int = 0, limit: int = 100):
 def get_item(db: Session, filename: str):
     return db.query(models.Item).filter(models.Item.filename == filename).first()
 
+
 def get_item_by_id(db: Session, id: int) -> models.Item:
     return db.query(models.Item).filter(models.Item.id == id).first()
 
@@ -87,14 +88,22 @@ def is_teacher(db: Session, user_id: int):
     )
 
 
-def update_item(db: Session, item_id: int, tested: bool, passed: bool, mark: int, pass_point: int, fail_point: int):
+def update_item(
+    db: Session,
+    item_id: int,
+    tested: bool,
+    passed: bool,
+    mark: int,
+    pass_point: int,
+    fail_point: int,
+):
     db_item = db.query(models.Item).filter(models.Item.id == item_id).first()
-    db_item.tested = tested 
+    db_item.tested = tested
     db_item.passed = passed
     db_item.mark = mark
     db_item.pass_point = pass_point
     db_item.fail_point = fail_point
-    
+
     db.commit()
     db.refresh(db_item)
     return db_item
@@ -115,8 +124,8 @@ def delete_item(db: Session, item_id: int):
     db.commit()
     return {"message": "Item deleted successfully"}
 
+
 def delete_user(db: Session, user_id: int):
     db.query(models.User).filter(models.User.id == user_id).delete()
     db.commit()
     return {"message": "User deleted successfully"}
-
