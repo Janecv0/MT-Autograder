@@ -3,6 +3,7 @@ from pydantic import BaseModel
 
 class ItemBase(BaseModel):
     description: str | None = None
+    assignment_id: int
 
 
 class ItemCreate(ItemBase):
@@ -15,7 +16,7 @@ class Item(ItemBase):
     filename: str
     tested: bool | None = False
     passed: bool | None = False
-    mark: int | None = 0
+    mark: float | None = 0
     pass_point: int | None = 0
     fail_point: int | None = 0
 
@@ -49,3 +50,21 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     username: str | None = None
+
+
+class AssignmentBase(BaseModel):
+    description: str | None = None
+    github_url: str | None = None
+    filename: str
+
+
+class AssignmentCreate(AssignmentBase):
+    pass
+
+
+class Assignment(AssignmentBase):
+    id: int
+    owner_id: int
+
+    class Config:
+        from_attributes = True

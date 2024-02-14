@@ -66,13 +66,18 @@ def get_user_item(db: Session, user_id: int):
 
 
 def create_user_item(
-    db: Session, item: schemas.ItemCreate, user_id: int, filename: str
+    db: Session,
+    item: schemas.ItemCreate,
+    user_id: int,
+    filename: str,
+    ass_id: int,
 ):
     db_item = models.Item(
         description=item.description,
     )
     db_item.filename = filename
     db_item.owner_id = user_id
+    db_item.assignment_id = ass_id
     db.add(db_item)
     db.commit()
     db.refresh(db_item)
@@ -114,6 +119,7 @@ def update_user(db: Session, user_id: int, user: schemas.User):
     db_user.email = user.email
     db_user.username = user.username
     db_user.role = user.role
+    db_user.hashed_password = get_password_hash(user.password)
     db.commit()
     db.refresh(db_user)
     return db_user
@@ -129,3 +135,43 @@ def delete_user(db: Session, user_id: int):
     db.query(models.User).filter(models.User.id == user_id).delete()
     db.commit()
     return {"message": "User deleted successfully"}
+
+
+def create_assignment(
+    db: Session, assignment: schemas.AssignmentCreate, user_id: int
+):
+    db_assignment = models.Assignment(
+        description=assignment.description,
+        github_url=assignment.github_url,
+        filename=assignment.filename
+    )
+    db_assignment.filename = assignment.filename
+    db_assignment.owner_id = user_id
+    db.add(db_assignment)
+    db.commit()
+    db.refresh(db_assignment)
+    return db_assignment
+
+def get_assignments(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(models.Assignment).offset(skip).limit(limit).all()
+
+def get_assignment_by_id(db: Session, assignment_id: int):
+    return db.query(models.Assignment).filter(models.Assignment.id == assignment_id).first()
+
+def get_my_assignments(db: Session, user_id: int):
+    return db.query(models.Assignment).filter(models.Assignment.owner_id == user_id).all()
+
+def update_assignment(
+    db: Session,
+    assignment_id: int,
+    description: str,
+    github_url: str,
+    filename: str,
+):
+    db_assignment = db.query(models.Assignment).filter(models.Assignment.id == assignment_id).first()
+    db_assignment.description = description
+    db_assignment.github_url = github_url
+    db_assignment.filename = filename
+    db.commit()
+    db.refresh(db_assignment)
+    return db_assignment

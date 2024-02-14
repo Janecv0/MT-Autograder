@@ -3,7 +3,6 @@ from sqlalchemy.orm import relationship
 
 from database import Base
 
-
 class User(Base):
     __tablename__ = "users"
 
@@ -14,6 +13,7 @@ class User(Base):
     role = Column(String, default="Student")
     is_active = Column(Boolean, default=True)
     items = relationship("Item", back_populates="owner")
+    assignments = relationship("Assignment", back_populates="owner")
 
 
 class Item(Base):
@@ -27,5 +27,19 @@ class Item(Base):
     mark = Column(Integer, default=0)
     pass_point = Column(Integer, default=0)
     fail_point = Column(Integer, default=0)
-    owner_id = Column(Integer, ForeignKey("users.id"), default=0)
+    owner_id = Column(Integer, ForeignKey("users.id"))
     owner = relationship("User", back_populates="items")
+    assignment_id = Column(Integer, ForeignKey("assignments.id"))
+    assignment = relationship("Assignment", back_populates="items")
+
+
+class Assignment(Base):
+    __tablename__ = "assignments"
+
+    id = Column(Integer, primary_key=True)
+    filename = Column(String, index=True, default=None)
+    description = Column(String, default=None)
+    github_url = Column(String, default=None)
+    owner_id = Column(Integer, ForeignKey("users.id"))
+    owner = relationship("User", back_populates="assignments")
+    items = relationship("Item", back_populates="assignment")

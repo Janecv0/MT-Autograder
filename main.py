@@ -227,19 +227,18 @@ def read_items(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return items
 
 
-@app.put("/users/{user_id}", response_model=schemas.User)
+@app.put("/users/me/update/", response_model=schemas.User)
 def update_user(
-    user_id: int,
     user: schemas.UserCreate,
     current_user: Annotated[schemas.User, Depends(get_current_active_user)],
     db: Session = Depends(get_db),
 ):
-    if user_id != current_user.id:
-        raise HTTPException(status_code=401, detail="Not enough permissions")
+    user_id = current_user.id
     return crud.update_user(db=db, user=user, user_id=user_id)
 
 
 def create_item(
+    ass_id: int,
     item: schemas.ItemCreate,
     current_user: Annotated[schemas.User, Depends(get_current_active_user)],
     db: Session = Depends(get_db),
@@ -251,7 +250,11 @@ def create_item(
         raise HTTPException(status_code=400, detail="File already updated")
     else:
         return crud.create_user_item(
-            db=db, item=item, user_id=current_user.id, filename=filename
+            db=db,
+            item=item,
+            user_id=current_user.id,
+            filename=filename,
+            ass_id=ass_id,
         )
 
 
@@ -278,25 +281,77 @@ def delete_user(
     return crud.delete_user(db=db, user_id=user_id)
 
 
+"""Assignment"""
+
+
+@app.post("/create_assignment/")
+async def create_assignment(
+    current_user: Annotated[schemas.User, Depends(get_current_active_user)],
+    assignment: schemas.AssignmentCreate,
+    db: Session = Depends(get_db),
+):
+    if crud.is_teacher(db, current_user.id):
+        return crud.create_assignment(db=db, assignment=assignment, user_id = current_user.id)
+    else:
+        raise HTTPException(status_code=401, detail="Not enough permissions")
+
+
+@app.get("/assignments/", response_model=list[schemas.Assignment])
+def read_assignments(
+    current_user: Annotated[schemas.User, Depends(get_current_active_user)],
+    db: Session = Depends(get_db),
+):
+    return crud.get_assignments(db=db)
+
+@app.get('/users/me/assignments/', response_model=list[schemas.Assignment])
+def read_own_assignments(
+    current_user: Annotated[schemas.User, Depends(get_current_active_user)],
+    db: Session = Depends(get_db),
+):
+    return crud.get_my_assignments(db=db, user_id=current_user.id)
+
+@app.put("/update_assignment/{assignment_id}")
+def update_assignment(
+    assignment_id: int,
+    description: str,
+    github_url: str,
+    filename: str,
+    current_user: Annotated[schemas.User, Depends(get_current_active_user)],
+    db: Session = Depends(get_db),
+):
+    ass_owner = crud.get_assignment_by_id(db=db,assignment_id=assignment_id).owner_id
+    if current_user.id == ass_owner:
+        return crud.update_assignment(
+            db=db,
+            assignment_id=assignment_id,
+            description=description,
+            github_url=github_url,
+            filename=filename,
+        )
+    else:
+        raise HTTPException(status_code=401, detail="Not enough permissions")
+        
+
 """File upload"""
 
 
-@app.post("/create_item/")
+@app.post("/create_item/{ass_id}}")
 async def create_upload_file(
+    ass_id: int,
     current_user: Annotated[schemas.User, Depends(get_current_active_user)],
     item: schemas.ItemCreate,
     db: Session = Depends(get_db),
 ):
-    return create_item(item, current_user, db)
+    return create_item(ass_id, item, current_user, db)
 
 
-@app.post("/uploadfile/")
+@app.post("/uploadfile/{ass_id}")
 async def create_upload_file(
+    ass_id: int,
     current_user: Annotated[schemas.User, Depends(get_current_active_user)],
-    test_n: int,
     file: UploadFile = File(...),
 ):
-    prefix = f"HW_{test_n}_" + current_user.username
+    prefix = f"HW_{ass_id}_" + current_user.username
     if not file:
         return {"message": "No upload file sent"}
     else:
@@ -311,17 +366,17 @@ async def create_upload_file(
 """Run tests"""
 
 
-@app.post("/test")
+@app.post("/test/{ass_id}")
 async def run(
-    test_n: int,
+    ass_id: int,
     current_user: Annotated[schemas.User, Depends(get_current_active_user)],
     db: Session = Depends(get_db),
 ):
-    resultfunc = run_tests(test_n, current_user.username)
+    resultfunc = run_tests(ass_id, current_user.username)
     passed = True if resultfunc["mark"] >= 50 else False
     crud.update_item(
         db=db,
-        item_id=crud.get_item(db, f"HW_{test_n}_{current_user.username}").id,
+        item_id=crud.get_item(db, f"HW_{ass_id}_{current_user.username}").id,
         tested=True,
         passed=passed,
         mark=resultfunc["mark"],
