@@ -30,6 +30,36 @@ Create user (emails must be different from other users), you can have only one r
 
 With `Teacher` account you can see and find all students and items. `Student` can only see info about himself and theirs items.
 
+Each assignment file to test hw must start with this code for importing students code.
+ ```
+import importlib
+import os
+import json
+
+with open("hw_name.json") as f:
+    hw_name = json.load(f)
+
+os.remove("hw_name.json")
+
+try:
+    HW = importlib.import_module(hw_name["filename"])
+except ImportError:
+    print(f"Failed to import module {hw_name}.")
+ ```
+
+Otherwise this test file is regular pytest code with naming convention `test_{whatever}_{number of points(only one int is allowed)}`
+
+> [!TIP]
+> Example
+>```
+>def test_1_5():
+>    assert HW.add(1, 2) == 3
+>```
+>Where `test` is pytest prefix, `1` is name of test, `5` is number of points for passing it. 
+
+
+
+
 ## Goal
 Server into which teacher logs in, upload assignment and see status of individual students on it. There is also place for students to upload their homeworks and get direct feedback from the system such as percentage, mark and errors, that come out during testing. 
 
