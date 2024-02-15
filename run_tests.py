@@ -8,7 +8,7 @@ def run_tests(test_n: int, user: str):
     """Run the tests and return the grade and the points."""
 
     # give the filename to the test file for the import
-    json_filename = f"{user}_HW_{test_n}_report.json"
+    json_filename = f"HW_{test_n}_{user}_report.json"
     hw_filename = f"HW_{test_n}_{user}"
     with open("hw_name.json", "w") as f:
         json.dump({"filename": hw_filename}, f)

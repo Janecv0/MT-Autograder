@@ -1,30 +1,46 @@
 ### MT-Autograder
-  
-## Possible Frameworks:
 
-    pytest, unittest, nose, doctest, Robot Framework => pytest
+Are you bored of marking students python homeworks? If your answear is yes this web app is for you.
 
-## Possible architecture:
-Ask the user for the folder location where the student's code and test files are stored. Use `argparse` for further info (do plagiatorism check, type of output,...)
-  
-With use of the `os` module navigate to the folder and list all the .py files in the folder.
-  
-For each .py file in the folder, use `pytest` to run the tests in the associated test file(s). Might use the `subprocess` module to run pytest as a subprocess. Capture the output of pytest so you can analyze it later.
-  
-Determine the score for each student based on the results of the tests. User assigns weights to each test based on their importance.
-  
-Store the scores in a dictionary or database so they can be easily retrieved and analyzed later.
-  
-To check for cheating, we could use a plagiarism checker library such as `pycode_similar` or `codechecker`. Need to look at this.
+## USAGE
+# check python version
+> [!IMPORTANT]
+> This code is written for python 3.10.+
 
+# Clone repo
+After copiing or downloading this repo get into develop_api branch.
+# Create virtual enviroment
+```
+python -m venv venv
+```
+# Activate it
+```
+.\venv\Scripts\activate.bat (for windows cmd)
+```
+# Install requriements
+```
+pip install -r .\req.txt
+```
+# Start uvicorn server
+```
+uvicorn main:app --reload
+```
+## Goal
+Server into which teacher logs in, upload assignment and see status of individual students on it. There is also place for students to upload their homeworks and get direct feeedback from the system such as percentage, mark and errors, that come out during testing. 
 
-## Goal:
-  User gives path to folder with n student files and test file (with argparse)
+## Work done
   
-  All teacher given test are tried and if specified other test (such as plagiathorism or efficiency) run through
-  
-  Test are running in safe container (docker) to prevent malicius code damage
-  
-  Record of each student score (html or csv)
-  
-  (make json with scores for each student, for end of semester summary html or csv)
+  # Picking testing framework
+  Out of : pytest, unittest, nose, doctest, Robot Framework. `Pytest` was picked.
+
+  # Running test from code with outcome capture
+  Using `pytest` plugin `pytest-json-report` pytest outcome is captured. From json file all needed data are taken.
+
+  # SQL database
+  Using `sqlalchemy` SQL database is created. Files for this: `database.py`- database setup and `models.py`- table setup
+
+  # Picking back-end
+  Out of: Flask, Django, FastAPI ->  `fastapi`
+
+  # Coding back-end
+  Most of needed function almost done.
