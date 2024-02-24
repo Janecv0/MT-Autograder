@@ -3,11 +3,17 @@ import json
 from subprocess import DEVNULL
 
 
-# Run pytest with --json-report option
 def run_tests(test_n: int, user: str):
-    """Run the tests and return the grade and the points."""
+    """Run the tests and return the grade and the points.
 
-    # give the filename to the test file for the import
+    Args:
+        test_n (int): The assignmment number.
+        user (str): The user's name.
+
+    Returns:
+        dict: A dictionary containing the mark, pass points, and failed points.
+    """
+
     json_filename = f"HW_{test_n}_{user}_report.json"
     hw_filename = f"HW_{test_n}_{user}"
     with open("hw_name.json", "w") as f:
@@ -25,29 +31,40 @@ def run_tests(test_n: int, user: str):
         stderr=DEVNULL,
     )
 
-    # Read the report file
     with open(json_filename) as f:
         report_data = json.load(f)
 
     return how_did_we_do(report_data["tests"], False)
 
 
-# Print the summary
 def print_summary(test):
+    """Print the summary of a test.
+
+    Args:
+        test (dict): The test dictionary.
+    """
+
     if test["outcome"] == "passed":
         print(f"✅ {test['nodeid']}")
-
     elif test["outcome"] == "failed":
         print(f"❌ {test['nodeid']}")
         print(f"  {test['call']['crash']['message']}")
 
 
 def get_points_from_test(test):
+    """Get the pass points and fail points from a test.
+
+    Args:
+        test (dict): The test dictionary.
+
+    Returns:
+        tuple: A tuple containing the pass points and fail points.
+    """
+
     pass_point, fail_point = 0, 0
 
     if test["outcome"] == "passed":
         pass_point = int(test["nodeid"][-1])
-
     elif test["outcome"] == "failed":
         fail_point = int(test["nodeid"][-1])
 
@@ -55,7 +72,17 @@ def get_points_from_test(test):
 
 
 def mark_test(pass_points, fail_points, letter_grade=False):
-    """ECTS grading system"""
+    """Calculate the mark based on pass points and fail points.
+
+    Args:
+        pass_points (int): The total pass points.
+        fail_points (int): The total fail points.
+        letter_grade (bool, optional): Whether to return a letter grade. Defaults to False.
+
+    Returns:
+        str or float: The mark or letter grade.
+    """
+
     if (pass_points + fail_points) == 0:
         return None
     else:
@@ -78,6 +105,15 @@ def mark_test(pass_points, fail_points, letter_grade=False):
 
 
 def get_test_points(tests):
+    """Calculate the total pass points and fail points from a list of tests.
+
+    Args:
+        tests (list): A list of test dictionaries.
+
+    Returns:
+        tuple: A tuple containing the total pass points and fail points.
+    """
+
     pass_points, fail_points = 0, 0
     for test in tests:
         pass_point, fail_point = get_points_from_test(test)
@@ -87,6 +123,16 @@ def get_test_points(tests):
 
 
 def how_did_we_do(tests, print_to_terminal: bool):
+    """Calculate the mark, pass points, and failed points from a list of tests.
+
+    Args:
+        tests (list): A list of test dictionaries.
+        print_to_terminal (bool): Whether to print the summary to the terminal.
+
+    Returns:
+        dict: A dictionary containing the mark, pass points, and failed points.
+    """
+
     pass_points, fail_points = get_test_points(tests)
 
     if print_to_terminal:
