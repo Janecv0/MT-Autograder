@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Table
 from sqlalchemy.orm import relationship
 
 from database import Base
@@ -17,18 +17,27 @@ class User(Base):
         is_active (bool): Indicates if the user is active (default is True).
         items (relationship): The items owned by the user.
         assignments (relationship): The assignments owned by the user.
+        classrooms (relationship): The classrooms owned by the user.
     """
 
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     username = Column(String, unique=True, index=True)
     email = Column(String, unique=True, index=True)
     hashed_password = Column(String)
-    role = Column(String, default="Student")
+    roles = relationship(
+        "Role", secondary="user_roles", back_populates="users", passive_deletes=True
+    )  # many to many
     is_active = Column(Boolean, default=True)
     items = relationship("Item", back_populates="owner")
-    assignments = relationship("Assignment", back_populates="owner")
+    own_assignments = relationship("Assignment", back_populates="owner")  # one to many
+    own_classrooms = relationship("Classroom", back_populates="owner")  # one to many
+    classrooms = relationship(
+        "Classroom",
+        secondary="user_classroom",
+        back_populates="students",
+    )  # many to many
 
 
 class Item(Base):
@@ -60,9 +69,11 @@ class Item(Base):
     mark = Column(Integer, default=0)
     pass_point = Column(Integer, default=0)
     fail_point = Column(Integer, default=0)
-    owner_id = Column(Integer, ForeignKey("users.id"))
+    owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
     owner = relationship("User", back_populates="items")
-    assignment_id = Column(Integer, ForeignKey("assignments.id"))
+    assignment_id = Column(
+        Integer, ForeignKey("assignments.id"), default=None, index=True
+    )
     assignment = relationship("Assignment", back_populates="items")
 
 
@@ -86,6 +97,83 @@ class Assignment(Base):
     filename = Column(String, index=True, default=None)
     description = Column(String, default=None)
     github_url = Column(String, default=None)
-    owner_id = Column(Integer, ForeignKey("users.id"))
-    owner = relationship("User", back_populates="assignments")
+    owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
+    owner = relationship("User", back_populates="own_assignments")
     items = relationship("Item", back_populates="assignment")
+    classroom_id = Column(
+        Integer, ForeignKey("classrooms.id", ondelete="CASCADE"), index=True
+    )
+    classroom = relationship("Classroom", back_populates="assignments")
+
+
+class Classroom(Base):
+    """
+    Represents a classroom in the db.
+
+    Attributes:
+        id (int): The unique identifier of the classroom.
+        name (str): The name of the classroom.
+        description (str): The description of the classroom.
+        year (int): The year of the classroom.
+        owner_id (int): The ID of the owner of the classroom.
+        owner (relationship): The owner of the classroom.
+        assignments (relationship): The assignments belonging to the classroom.
+        list_of_students (list): The list of students in the classroom.
+    """
+
+    __tablename__ = "classrooms"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String, index=True, default=None)
+    description = Column(String, default=None)
+    year = Column(Integer, default=None)
+    owner_id = Column(Integer, ForeignKey("users.id"))
+    owner = relationship("User", back_populates="own_classrooms")
+    assignments = relationship(
+        "Assignment", back_populates="classroom", passive_deletes=True
+    )
+    students = relationship(
+        "User", secondary="user_classroom", back_populates="classrooms"
+    )
+
+
+class UserClassroom(Base):
+    """
+    Represents the association between users and classrooms.
+
+    Attributes:
+        user_id (int): The ID of the user.
+        classroom_id (int): The ID of the classroom.
+    """
+
+    __tablename__ = "user_classroom"
+
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    classroom_id = Column(
+        Integer, ForeignKey("classrooms.id", ondelete="CASCADE"), primary_key=True
+    )
+
+
+class Role(Base):
+    __tablename__ = "roles"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(80), nullable=False)
+    slug = Column(String(80), nullable=False, unique=True)
+
+    users = relationship(
+        "User", secondary="user_roles", back_populates="roles", passive_deletes=True
+    )
+
+
+class UserRole(Base):
+    __tablename__ = "user_roles"
+
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    role_id = Column(
+        Integer, ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True
+    )

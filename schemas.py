@@ -1,6 +1,12 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 
+class RoleBase(BaseModel):
+    """
+    Base model for a role.
+    """
 
+    name: str
+    slug: str | None = None
 class ItemBase(BaseModel):
     """
     Base model for an item.
@@ -45,7 +51,6 @@ class UserBase(BaseModel):
 
     email: str
     username: str
-    role: str | None = "Student"
 
 
 class UserCreate(UserBase):
@@ -64,6 +69,8 @@ class User(UserBase):
     id: int
     is_active: bool | None = True
     items: list[Item] = []
+    roles: list[RoleBase] = []
+    own_assignments: list | None
 
     class Config:
         """
@@ -104,6 +111,7 @@ class AssignmentCreate(AssignmentBase):
     """
     Model for creating an assignment.
     """
+    pass
 
 
 class Assignment(AssignmentBase):
@@ -113,6 +121,8 @@ class Assignment(AssignmentBase):
 
     id: int
     owner_id: int
+    items: list[Item] = []
+    classroom_id: int
 
     class Config:
         """
@@ -120,3 +130,48 @@ class Assignment(AssignmentBase):
         """
 
         from_attributes = True
+
+
+class ClassroomBase(BaseModel):
+    """
+    Base model for a classroom.
+    """
+
+    name: str
+    description: str | None = None
+    year: int
+
+
+class ClassroomCreate(ClassroomBase):
+    """
+    Model for creating a classroom.
+    """
+
+    pass
+
+
+class Classroom(ClassroomBase):
+    """
+    Model for a classroom.
+    """
+
+    id: int
+    owner_id: int
+    owner: User
+    assignments: list[Assignment] = []
+    students: list[User] = []
+
+    class Config:
+        """
+        Configuration for the Classroom model.
+        """
+
+        from_attributes = True
+
+
+class EmailSchema(BaseModel):
+    """
+    Model for an email.
+    """
+
+    email: list[EmailStr]

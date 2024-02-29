@@ -4,8 +4,14 @@ from secrets import token_hex
 
 from fastapi import Depends, FastAPI, HTTPException, status, UploadFile, File
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 from jose import JWTError, jwt
 from passlib.context import CryptContext
+from starlette.responses import JSONResponse
+from pathlib import Path
+import os
+from dotenv import load_dotenv
+
 
 from sqlalchemy.orm import Session
 import crud, models, schemas
@@ -15,17 +21,33 @@ models.Base.metadata.create_all(bind=engine)
 
 from run_tests import run_tests
 
+load_dotenv()
 
 # to get a string like this run:
 # openssl rand -hex 32
-SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+SECRET_KEY = os.getenv("SECRET_KEY")
+ALGORITHM = os.getenv("ALGORITHM")
+ACCESS_TOKEN_EXPIRE_MINUTES = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")
+
+# email configuration
+conf = ConnectionConfig(
+    MAIL_USERNAME=os.getenv("MAIL_USERNAME"),
+    MAIL_PASSWORD=os.getenv("MAIL_PASSWORD"),
+    MAIL_FROM=os.getenv("MAIL_FROM"),
+    MAIL_PORT=465,
+    MAIL_SERVER=os.getenv("MAIL_SERVER"),
+    MAIL_STARTTLS=False,
+    MAIL_SSL_TLS=True,
+    USE_CREDENTIALS=True,
+    VALIDATE_CERTS=True,
+    TEMPLATE_FOLDER=Path(__file__).parent,
+)
 
 """Authentication"""
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
 
 app = FastAPI()
 
@@ -206,7 +228,8 @@ async def login_for_access_token(
 
 @app.get("/users/me/")
 async def read_users_me(
-    current_user: Annotated[schemas.User, Depends(get_current_active_user)]
+    current_user: Annotated[schemas.User, Depends(get_current_active_user)],
+    db: Session = Depends(get_db),
 ):
     """
     Get the current authenticated user.
@@ -217,7 +240,7 @@ async def read_users_me(
     Returns:
         User: The current authenticated user.
     """
-    return current_user
+    return crud.get_user(db,user_id=current_user.id)
 
 
 @app.get("/users/me/items/")
@@ -262,7 +285,7 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     return crud.create_user(db=db, user=user)
 
 
-@app.get("/users/", response_model=list[schemas.User])
+@app.get("/users/")
 def read_users(
     current_user: Annotated[schemas.User, Depends(get_current_active_user)],
     skip: int = 0,
@@ -285,8 +308,8 @@ def read_users(
         HTTPException: If the current user is not a teacher.
     """
     if crud.is_teacher(db, current_user.id):
-        users = crud.get_users(db, skip=skip, limit=limit)
-        return users
+        return crud.get_users(db, skip=skip, limit=limit)
+
     else:
         raise HTTPException(status_code=401, detail="You are not a teacher")
 
@@ -378,7 +401,7 @@ def read_user_email(
         raise HTTPException(status_code=401, detail="You are not a teacher")
 
 
-@app.get("/users/by_role/{role}", response_model=schemas.User)
+@app.get("/users/by_role/{role}")
 def read_user_by_role(role: str, db: Session = Depends(get_db)):
     """
     Get a user by role.
@@ -393,10 +416,11 @@ def read_user_by_role(role: str, db: Session = Depends(get_db)):
     Raises:
         HTTPException: If the user is not found.
     """
-    db_user = crud.get_user_by_role(db, role=role)
-    if db_user is None:
+    db_users = crud.get_user_by_role(db, role=role)
+    if db_users is None:
         raise HTTPException(status_code=404, detail="User not found")
-    return db_user
+    else:
+        return db_users
 
 
 @app.get("/users/role/")
@@ -540,6 +564,27 @@ def delete_user(
     if not crud.is_teacher(db, current_user.id) and user_id != current_user.id:
         raise HTTPException(status_code=401, detail="Not enough permissions")
     return crud.delete_user(db=db, user_id=user_id)
+
+
+@app.put("/users/me/update_role/")
+async def update_user_role(
+    role: str,
+    current_user: Annotated[schemas.User, Depends(get_current_active_user)],
+    db: Session = Depends(get_db),
+):
+    """
+    Update the role of the current authenticated user.
+
+    Args:
+        role (str): The updated role of the user.
+        current_user (User): The current authenticated user.
+        db (Session, optional): The database session. Defaults to Depends(get_db).
+
+    Returns:
+        User: The updated user.
+
+    """
+    return crud.change_user_role(db=db, user_id=current_user.id, role=role)
 
 
 """Assignment"""
@@ -737,3 +782,107 @@ async def run(
     ),
 
     return {"result": resultfunc}
+
+
+""" email sending, class enrolling"""
+
+
+# for testing
+@app.post("/email")
+async def simple_send(email: schemas.EmailSchema, login, password) -> JSONResponse:
+    message = MessageSchema(
+        subject="Welcome to autograder",
+        recipients=email.model_dump().get("email"),
+        template_body={"login": login, "temp_password": password},
+        subtype=MessageType.html,
+    )
+
+    fm = FastMail(conf)
+    await fm.send_message(message, template_name="email_template.html")
+    return JSONResponse(status_code=200, content={"message": "email has been sent"})
+
+
+@app.post("/create_classroom")
+async def create_classroom(
+    classroom: schemas.ClassroomCreate,
+    current_user: Annotated[schemas.User, Depends(get_current_active_user)],
+    db: Session = Depends(get_db),
+):
+    """
+    Create a classroom.
+
+    Args:
+        classroom (schemas.ClassroomCreate): The classroom data to be created.
+        current_user (schemas.User): The current user creating the classroom.
+        db (Session, optional): The database session. Defaults to Depends(get_db).
+
+    Returns:
+        schemas.Classroom: The created classroom.
+
+    Raises:
+        HTTPException: If the current user does not have enough permissions.
+    """
+
+    if crud.is_teacher(db, current_user.id):
+        return crud.create_classroom(
+            db=db, classroom=classroom, user_id=current_user.id
+        )
+    else:
+        raise HTTPException(status_code=401, detail="Not enough permissions")
+
+
+@app.get("/classes")
+async def get_all_classes(
+    # current_user: Annotated[schemas.User, Depends(get_current_active_user)],
+    db: Session = Depends(get_db),
+):
+    """
+    Get a list of classes.
+
+    Args:
+        current_user (User): The current authenticated user.
+        db (Session, optional): The database session. Defaults to Depends(get_db).
+
+    Returns:
+        List[Classrooms]: The list of classrooms.
+    """
+    return crud.get_classrooms(db=db)
+
+
+@app.post("/enroll_classroom/{class_id}")
+async def enroll_classroom(
+    class_id: int,
+    email: str,
+    current_user: Annotated[schemas.User, Depends(get_current_active_user)],
+    db: Session = Depends(get_db),
+):
+    """
+    Enrolls a student in a classroom.
+
+    Parameters:
+    - class_id (int): The ID of the classroom.
+    - email (str): The email of the student to be enrolled.
+    - current_user (schemas.User): The current user making the request.
+    - db (Session): The database session.
+
+    Returns:
+    - The enrolled student.
+
+    Raises:
+    - HTTPException: If the current user is not a teacher or if the student is not found.
+    """
+
+    if crud.is_teacher(db, current_user.id):
+        if crud.is_user_in_db(db, email):
+            if not crud.is_student_in_classroom(db, email, class_id):
+                return crud.enroll_student(
+                    db=db,
+                    user_id=crud.get_user_by_email(db=db, email=email).id,
+                    classroom_id=class_id,
+                )
+            else:
+                raise HTTPException(status_code=400, detail="Student already enrolled")
+        else:
+            raise HTTPException(status_code=404, detail="Student not found")
+    else:
+        raise HTTPException(status_code=401, detail="Not enough permissions")
