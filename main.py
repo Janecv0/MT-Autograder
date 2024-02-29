@@ -240,7 +240,7 @@ async def read_users_me(
     Returns:
         User: The current authenticated user.
     """
-    return crud.get_user(db,user_id=current_user.id)
+    return crud.get_user(db, user_id=current_user.id)
 
 
 @app.get("/users/me/items/")

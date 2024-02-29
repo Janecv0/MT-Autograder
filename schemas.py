@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr
 
+
 class RoleBase(BaseModel):
     """
     Base model for a role.
@@ -7,6 +8,8 @@ class RoleBase(BaseModel):
 
     name: str
     slug: str | None = None
+
+
 class ItemBase(BaseModel):
     """
     Base model for an item.
@@ -111,6 +114,7 @@ class AssignmentCreate(AssignmentBase):
     """
     Model for creating an assignment.
     """
+
     pass
 
 

@@ -75,7 +75,12 @@ def get_user_by_role(db: Session, role: str):
     Returns:
         User: The user with the specified role, or None if not found.
     """
-    return db.query(models.User).join(models.User.roles).filter(models.Role.name == role).all()
+    return (
+        db.query(models.User)
+        .join(models.User.roles)
+        .filter(models.Role.name == role)
+        .all()
+    )
 
 
 def get_user_role(db: Session, user_id: str):
@@ -89,7 +94,13 @@ def get_user_role(db: Session, user_id: str):
     Returns:
         str: The role of the user.
     """
-    return db.query(models.Role).join(models.User.roles).filter(models.User.id==user_id).first().name
+    return (
+        db.query(models.Role)
+        .join(models.User.roles)
+        .filter(models.User.id == user_id)
+        .first()
+        .name
+    )
 
 
 def get_password_hash(password):
