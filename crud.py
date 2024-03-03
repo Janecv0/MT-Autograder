@@ -219,7 +219,6 @@ def create_user_item(
     db: Session,
     item: schemas.ItemCreate,
     user_id: int,
-    filename: str,
     ass_id: int,
 ):
     """
@@ -238,7 +237,7 @@ def create_user_item(
     db_item = models.Item(
         description=item.description,
     )
-    db_item.filename = filename
+    db_item.filename = f"HW_{ass_id}_{user_id}"
     db_item.owner_id = user_id
     db_item.assignment_id = ass_id
     db.add(db_item)
