@@ -271,6 +271,54 @@ def is_teacher(db: Session, user_id: int):
         return False
 
 
+def is_admin(db: Session, user_id: int):
+    """
+    Check if a user is a teacher based on their role.
+
+    Args:
+        db (Session): The database session.
+        user_id (int): The ID of the user.
+
+    Returns:
+        bool: True if the user is a teacher, False otherwise.
+    """
+
+    if (
+        db.query(models.User)
+        .join(models.User.roles)
+        .filter(models.User.id == user_id)
+        .filter(models.Role.slug == "Admin")
+        is not None
+    ):
+        return True
+    else:
+        return False
+
+
+def is_super_teacher(db: Session, user_id: int):
+    """
+    Check if a user is a teacher based on their role.
+
+    Args:
+        db (Session): The database session.
+        user_id (int): The ID of the user.
+
+    Returns:
+        bool: True if the user is a teacher, False otherwise.
+    """
+
+    if (
+        db.query(models.User)
+        .join(models.User.roles)
+        .filter(models.User.id == user_id)
+        .filter(models.Role.slug == "Super Teacher")
+        is not None
+    ):
+        return True
+    else:
+        return False
+
+
 def update_item(
     db: Session,
     item_id: int,

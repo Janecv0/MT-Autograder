@@ -5,15 +5,22 @@ from secrets import token_hex
 from fastapi import Depends, FastAPI, HTTPException, status, UploadFile, File
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
+from fastapi.encoders import jsonable_encoder
+
 from jose import JWTError, jwt
 from passlib.context import CryptContext
+
 from starlette.responses import JSONResponse
 from pathlib import Path
 import os
+
 from dotenv import load_dotenv
+
+import regex as re
 
 
 from sqlalchemy.orm import Session
+
 import crud, models, schemas
 from database import SessionLocal, engine
 
@@ -27,7 +34,7 @@ load_dotenv()
 # openssl rand -hex 32
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
-ACCESS_TOKEN_EXPIRE_MINUTES = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
 
 # email configuration
 conf = ConnectionConfig(
@@ -47,6 +54,8 @@ conf = ConnectionConfig(
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+re_mail = re.compile("[\w.-]+@[\w.-]+\.[a-zA-Z]{2,}")
 
 
 app = FastAPI()
@@ -96,6 +105,42 @@ def get_password_hash(password):
         str: The hashed password.
     """
     return pwd_context.hash(password)
+
+
+def get_random_password():
+    """
+    Generate a random password.
+
+    Returns:
+        str: The random password.
+    """
+    return token_hex(6)
+
+
+def match_email(email: str):
+    """
+    Check if the email is valid.
+
+    Args:
+        email (str): The email to check.
+
+    Returns:
+        bool: True if the email is valid, False otherwise.
+    """
+    return re_mail.match(email)
+
+
+def is_email(email: str):
+    """
+    Check if the email is valid.
+
+    Args:
+        email (str): The email to check.
+
+    Returns:
+        bool: True if the email is valid, False otherwise.
+    """
+    return match_email(email) is not None
 
 
 def authenticate_user(username: str, password: str, db: Session = Depends(get_db)):
@@ -501,7 +546,7 @@ def create_item(
         HTTPException: If a file with the same name already exists.
     """
     # if file with same name already exists
-    filename = f"HW_1_{current_user.username}"
+    filename = f"HW_1_{current_user.id}"
     db_item = crud.get_item(db=db, filename=filename)
     if db_item:
         raise HTTPException(status_code=400, detail="File already updated")
@@ -736,7 +781,7 @@ async def create_upload_file(
     Returns:
         dict: A dictionary containing the message indicating the success of the upload.
     """
-    prefix = f"HW_{ass_id}_" + current_user.username
+    prefix = f"HW_{ass_id}_{current_user.id}"
     if not file:
         return {"message": "No upload file sent"}
     else:
@@ -769,11 +814,11 @@ async def run(
     - dict: The result of the autograder.
     """
 
-    resultfunc = run_tests(ass_id, current_user.username)
+    resultfunc = run_tests(ass_id, current_user.id)
     passed = True if resultfunc["mark"] >= 50 else False
     crud.update_item(
         db=db,
-        item_id=crud.get_item(db, f"HW_{ass_id}_{current_user.username}").id,
+        item_id=crud.get_item(db, f"HW_{ass_id}_{current_user.id}").id,
         tested=True,
         passed=passed,
         mark=resultfunc["mark"],
@@ -787,19 +832,39 @@ async def run(
 """ email sending, class enrolling"""
 
 
-# for testing
-@app.post("/email")
-async def simple_send(email: schemas.EmailSchema, login, password) -> JSONResponse:
+async def send_email(email: list, login: str, password: str) -> dict:
     message = MessageSchema(
         subject="Welcome to autograder",
-        recipients=email.model_dump().get("email"),
+        recipients=email,
         template_body={"login": login, "temp_password": password},
         subtype=MessageType.html,
     )
 
     fm = FastMail(conf)
-    await fm.send_message(message, template_name="email_template.html")
-    return JSONResponse(status_code=200, content={"message": "email has been sent"})
+    try:
+        await fm.send_message(message, template_name="email_template.html")
+        return {"message": "email has been sent"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
+
+
+@app.post("/send_email")
+async def simple_send(
+    email: schemas.EmailSchema, login: str, password: str
+) -> JSONResponse:
+    """
+    Sends an email using the provided email schema, login, and password.
+
+    Args:
+        email (schemas.EmailSchema): The email schema containing the email details.
+        login (str): The login for the email service.
+        password (str): The password for the email service.
+
+    Returns:
+        JSONResponse: The response containing the status code and response data.
+    """
+    response_data = await send_email(email.model_dump().get("email"), login, password)
+    return JSONResponse(status_code=200, content=jsonable_encoder(response_data))
 
 
 @app.post("/create_classroom")
@@ -852,37 +917,69 @@ async def get_all_classes(
 @app.post("/enroll_classroom/{class_id}")
 async def enroll_classroom(
     class_id: int,
-    email: str,
+    email_list: str,
     current_user: Annotated[schemas.User, Depends(get_current_active_user)],
     db: Session = Depends(get_db),
 ):
     """
-    Enrolls a student in a classroom.
+    Enrolls students into a classroom.
 
-    Parameters:
-    - class_id (int): The ID of the classroom.
-    - email (str): The email of the student to be enrolled.
-    - current_user (schemas.User): The current user making the request.
-    - db (Session): The database session.
+    Args:
+        class_id (int): The ID of the classroom.
+        email_list (str): A comma-separated string of student emails.
+        current_user (schemas.User): The current user making the request.
+        db (Session, optional): The database session. Defaults to Depends(get_db).
 
     Returns:
-    - The enrolled student.
-
-    Raises:
-    - HTTPException: If the current user is not a teacher or if the student is not found.
+        JSONResponse: A JSON response containing the enrolled users, new users, and incorrect emails.
     """
-
-    if crud.is_teacher(db, current_user.id):
-        if crud.is_user_in_db(db, email):
-            if not crud.is_student_in_classroom(db, email, class_id):
-                return crud.enroll_student(
-                    db=db,
-                    user_id=crud.get_user_by_email(db=db, email=email).id,
-                    classroom_id=class_id,
-                )
+    incorrect_emails = []
+    new_users = []
+    enrolled_users = []
+    email_list = email_list.split(",")
+    for email in email_list:
+        if is_email(email):
+            if crud.is_teacher(db, current_user.id):
+                if crud.is_user_in_db(db, email):
+                    if not crud.is_student_in_classroom(db, email, class_id):
+                        enrolled_users.append(email)
+                        return crud.enroll_student(
+                            db=db,
+                            user_id=crud.get_user_by_email(db=db, email=email).id,
+                            classroom_id=class_id,
+                        )
+                else:
+                    username = email.split("@")[0]
+                    password = get_random_password()
+                    user = crud.create_user(
+                        db=db,
+                        user=schemas.UserCreate(
+                            username=username, email=email, password=password
+                        ),
+                    )
+                    crud.enroll_student(
+                        db=db,
+                        user_id=crud.get_user_by_email(db=db, email=email).id,
+                        classroom_id=class_id,
+                    )
+                    await send_email([email], username, password)
+                    new_users.append(email)
             else:
-                raise HTTPException(status_code=400, detail="Student already enrolled")
+                raise HTTPException(status_code=401, detail="Not enough permissions")
         else:
-            raise HTTPException(status_code=404, detail="Student not found")
-    else:
-        raise HTTPException(status_code=401, detail="Not enough permissions")
+            incorrect_emails.append(email)
+    if len(enrolled_users) == 0 and len(new_users) == 0 and len(incorrect_emails) == 0:
+        return JSONResponse(
+            status_code=400,
+            content=jsonable_encoder({"message": "All students are already enrolled"}),
+        )
+    return JSONResponse(
+        status_code=200,
+        content=jsonable_encoder(
+            {
+                "enrolled_users": enrolled_users,
+                "new_users": new_users,
+                "incorrect_emails": incorrect_emails,
+            }
+        ),
+    )

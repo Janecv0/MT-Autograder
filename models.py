@@ -37,6 +37,7 @@ class User(Base):
         "Classroom",
         secondary="user_classroom",
         back_populates="students",
+        passive_deletes=True,
     )  # many to many
 
 

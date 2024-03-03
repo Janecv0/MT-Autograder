@@ -3,7 +3,7 @@ import json
 from subprocess import DEVNULL
 
 
-def run_tests(test_n: int, user: str):
+def run_tests(test_n: int, user: int):
     """Run the tests and return the grade and the points.
 
     Args:
