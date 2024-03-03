@@ -7,9 +7,8 @@ from datetime import datetime, timedelta, timezone
 from secrets import token_hex
 from sqlalchemy.orm import Session
 import os
-import crud,schemas
+import crud, schemas
 from database import get_db
-
 
 
 # to get a string like this run:
@@ -21,6 +20,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
 
 def verify_password(plain_password, hashed_password):
     """
@@ -59,7 +59,6 @@ def get_random_password():
     return token_hex(6)
 
 
-
 def authenticate_user(username: str, password: str, db: Session = Depends(get_db)):
     """
     Authenticate a user based on the provided username and password.
@@ -78,6 +77,7 @@ def authenticate_user(username: str, password: str, db: Session = Depends(get_db
     if not verify_password(password, user.hashed_password):
         return False
     return user
+
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
     """

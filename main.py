@@ -3,7 +3,7 @@ from typing import Annotated
 
 
 from fastapi import Depends, FastAPI, HTTPException, status, UploadFile, File
-from fastapi.security import  OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 from fastapi.encoders import jsonable_encoder
 
@@ -28,7 +28,6 @@ from run_tests import run_tests
 load_dotenv()
 
 
-
 # email configuration
 conf = ConnectionConfig(
     MAIL_USERNAME=os.getenv("MAIL_USERNAME"),
@@ -42,7 +41,6 @@ conf = ConnectionConfig(
     VALIDATE_CERTS=True,
     TEMPLATE_FOLDER=Path(__file__).parent,
 )
-
 
 
 re_mail = re.compile("[\w.-]+@[\w.-]+\.[a-zA-Z]{2,}")
@@ -83,7 +81,6 @@ def is_email(email: str):
         bool: True if the email is valid, False otherwise.
     """
     return match_email(email) is not None
-
 
 
 @app.post("/token")
@@ -572,8 +569,8 @@ async def create_upload_file(
     - The created item.
 
     """
-    if crud.get_item(db,f"HW_{ass_id}_{current_user.id}") is None:
-        return crud.create_user_item(db,item,current_user.id,ass_id)
+    if crud.get_item(db, f"HW_{ass_id}_{current_user.id}") is None:
+        return crud.create_user_item(db, item, current_user.id, ass_id)
     else:
         raise HTTPException(status_code=401, detail="Item already exists.")
 
