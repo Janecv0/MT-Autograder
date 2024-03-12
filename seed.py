@@ -29,31 +29,31 @@ for role_data in roles_data:
 # Create users
 users_data = [
     {
-        "username": "admin_user",
+        "username": "admin",
         "email": "admin@example.com",
         "hashed_password": f"{get_password_hash('1234')}",
         "roles": [roles[0]],
     },
     {
-        "username": "teacher_user",
+        "username": "teacher",
         "email": "teacher@example.com",
         "hashed_password": f"{get_password_hash('1234')}",
         "roles": [roles[1]],
     },
     {
-        "username": "student_user1",
+        "username": "student1",
         "email": "student1@example.com",
         "hashed_password": f"{get_password_hash('1234')}",
         "roles": [roles[2]],
     },
     {
-        "username": "student_user2",
+        "username": "student2",
         "email": "student2@example.com",
         "hashed_password": f"{get_password_hash('1234')}",
         "roles": [roles[2]],
     },
     {
-        "username": "student_user3",
+        "username": "student3",
         "email": "student3@example.com",
         "hashed_password": f"{get_password_hash('1234')}",
         "roles": [roles[2]],

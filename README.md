@@ -21,6 +21,19 @@ python -m venv venv
 ```
 pip install -r .\req.txt
 ```
+### Create .env
+
+```
+SECRET_KEY = ""
+ALGORITHM = ""
+ACCESS_TOKEN_EXPIRE_MINUTES = 
+MAIL_USERNAME=""
+MAIL_PASSWORD=""
+MAIL_FROM=""
+MAIL_SERVER=""
+
+```
+
 ### Start uvicorn server
 ```
 uvicorn main:app --reload

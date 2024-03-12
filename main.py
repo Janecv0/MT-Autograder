@@ -422,6 +422,7 @@ def delete_user(
 @app.put("/users/me/update_role/")
 async def update_user_role(
     role: str,
+    user_id: int,
     current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
     db: Session = Depends(get_db),
 ):
@@ -437,7 +438,8 @@ async def update_user_role(
         User: The updated user.
 
     """
-    return crud.change_user_role(db=db, user_id=current_user.id, role=role)
+    if crud.is_admin(db, current_user.id):
+        return crud.change_user_role(db=db, user_id=user_id, role=role)
 
 
 """Assignment"""

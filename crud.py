@@ -151,8 +151,10 @@ def change_user_role(db: Session, user_id: int, role: str):
     Returns:
         User: The user with the updated role.
     """
+
+    db_role = db.query(models.Role).filter(models.Role.name == role).first()
     db_user = db.query(models.User).filter(models.User.id == user_id).first()
-    db_user.role = role
+    db_user.roles.append(db_role)
     db.commit()
     db.refresh(db_user)
     return db_user
