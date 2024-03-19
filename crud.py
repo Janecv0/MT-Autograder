@@ -667,3 +667,9 @@ def enroll_student(db: Session, classroom_id: int, user_id: int):
     db.commit()
     db.refresh(db_classroom)
     return db_classroom
+
+def get_my_classrooms(db: Session, user_id: int):
+    """
+    Return classes in which is user enrolled.
+    """
+    return db.query(models.Classroom).join(models.Classroom.students).filter(models.User.id == user_id).all() 

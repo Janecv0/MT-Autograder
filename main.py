@@ -2,12 +2,15 @@ from datetime import timedelta
 from typing import Annotated
 
 
-from fastapi import Depends, FastAPI, HTTPException, status, UploadFile, File
+from fastapi import Depends, FastAPI, HTTPException, status, UploadFile, File, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 from fastapi.encoders import jsonable_encoder
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 
-from starlette.responses import JSONResponse
+from starlette.responses import JSONResponse, Response
 from pathlib import Path
 import os
 
@@ -48,13 +51,16 @@ re_mail = re.compile("[\w.-]+@[\w.-]+\.[a-zA-Z]{2,}")
 
 app = FastAPI()
 
+# Jinja2templates
+templates = Jinja2Templates(directory="templates")
 
-@app.get("/")
-def read_root():
+
+@app.get("/", response_class=HTMLResponse)
+def read_root(request: Request):
     """
     Root endpoint to check if the server is running.
     """
-    return "Server is running!"
+    return templates.TemplateResponse("index.html", {"request": request})
 
 
 def match_email(email: str):
@@ -114,12 +120,24 @@ async def login_for_access_token(
     )
     return schemas.Token(access_token=access_token, token_type="bearer")
 
+@app.get("/login", response_class=HTMLResponse)
+def login(request: Request):
+    """
+    Login endpoint to obtain an access token.
 
-@app.get("/users/me/")
+    Args:
+        request (Request): The request object.
+
+    Returns:
+        TemplateResponse: The login template.
+    """
+    return templates.TemplateResponse("login.html", {"request": request})
+
+@app.get("/users/me")
 async def read_users_me(
+    request: Request,
     current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
-    db: Session = Depends(get_db),
-):
+    db: Session = Depends(get_db),):
     """
     Get the current authenticated user.
 
@@ -130,6 +148,11 @@ async def read_users_me(
         User: The current authenticated user.
     """
     return crud.get_user(db, user_id=current_user.id)
+
+@app.get("/me", response_class=HTMLResponse)
+async def read_users_me(request: Request):
+
+    return templates.TemplateResponse("me.html", {"request": request})
 
 
 @app.get("/users/me/items/")
@@ -153,8 +176,18 @@ async def read_own_items(
 """Database operations"""
 
 
-@app.post("/users/", response_model=schemas.User)
-def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+@app.get("/create/user/", response_class=HTMLResponse)
+def create_user(request: Request):
+
+    return templates.TemplateResponse("create_user.html", {"request": request})
+
+
+@app.post("/create/user/", response_class=HTMLResponse)
+def create_user(
+    user: schemas.UserCreate,
+    request: Request,
+    db: Session = Depends(get_db),
+):
     """
     Create a new user.
 
@@ -171,7 +204,8 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db_user = crud.get_user_by_email(db, email=user.email)
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
-    return crud.create_user(db=db, user=user)
+    crud.create_user(db=db, user=user)
+    return templates.TemplateResponse("create_user.html", {"request": request})
 
 
 @app.get("/users/")
@@ -655,7 +689,7 @@ async def send_email(email: list, login: str, password: str) -> dict:
 
     fm = FastMail(conf)
     try:
-        await fm.send_message(message, template_name="email_template.html")
+        await fm.send_message(message, template_name="./templates/email_template.html")
         return {"message": "email has been sent"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
@@ -712,6 +746,7 @@ async def create_classroom(
 @app.get("/classes")
 async def get_all_classes(
     # current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
+    request: Request,
     db: Session = Depends(get_db),
 ):
     """
@@ -724,7 +759,25 @@ async def get_all_classes(
     Returns:
         List[Classrooms]: The list of classrooms.
     """
-    return crud.get_classrooms(db=db)
+    class_list=crud.get_classrooms(db=db)
+    return templates.TemplateResponse("class_list.html", {"request": request, "class_list": class_list})
+
+@app.get("/class/my")
+async def get_my_classes(
+    current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
+    db: Session = Depends(get_db),
+):
+    """
+    Get a list of classes.
+
+    Args:
+        current_user (User): The current authenticated user.
+        db (Session, optional): The database session. Defaults to Depends(get_db).
+
+    Returns:
+        List[Classrooms]: The list of classrooms.
+    """
+    return crud.get_my_classrooms(db=db, user_id=current_user.id)
 
 
 @app.post("/enroll_classroom/{class_id}")
@@ -796,3 +849,14 @@ async def enroll_classroom(
             }
         ),
     )
+
+@app.get("/nav")
+async def nav(request: Request):
+    """
+    Navigation bar endpoint for placeholder purposes.
+    """
+    return templates.TemplateResponse("nav.html", {"request": request})
+
+@app.get("/mypage")
+async def my_page(request:Request):
+    return templates.TemplateResponse("my_page.html", {"request": request})

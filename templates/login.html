@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Page</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body>
+
+    <div id="nav-placeholder"></div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(function () {
+            $("#nav-placeholder").load("nav");
+        });
+    </script>
+
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h4>Login</h4>
+                    </div>
+                    <div class="card-body">
+                        <form id="loginForm">
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Username</label>
+                                <input type="text" class="form-control" id="username" name="username" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="password" name="password" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Login</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        document.getElementById("loginForm").addEventListener("submit", async function (event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+
+            try {
+                const response = await fetch("token", {
+                    method: "POST",
+                    headers: {
+                        "Accept": "application/json",
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    },
+                    body: new URLSearchParams({
+                        username: formData.get("username"),
+                        password: formData.get("password"),
+                        grant_type: "",
+                        scope: "",
+                        client_id: "",
+                        client_secret: ""
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const token = data.access_token;
+                    console.log("Token:", token);
+                    localStorage.setItem("authToken", token);
+                    updateButtonVisibility();
+                    // Redirect or perform any other action upon successful login
+                    alert("Login successful!");
+
+                } else {
+                    console.error("Login failed");
+                    alert("Login failed. Please check your credentials and try again.");
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert("An error occurred. Please try again later.");
+            }
+        });
+    </script>
+
+</body>
+
+</html>
