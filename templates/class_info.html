@@ -18,7 +18,7 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
       $(function () {
-        $("#nav-placeholder").load("nav");
+        $("#nav-placeholder").load("/nav");
       });
     </script>
 
@@ -30,60 +30,47 @@
         // Make sure token is available
         if (token) {
           // Make a GET request to the API endpoint with the retrieved token
-          fetch("http://127.0.0.1:8000/class/my", {
+          fetch("http://127.0.0.1:8000/logincheck", {
             method: "GET",
             headers: {
               Accept: "application/json",
               Authorization: `Bearer ${token}`,
             },
-          })
-            .then((response) => {
-              if (response.status === 401) {
-                alert("Unauthorized access. Please login again.");
-                console.error("Unauthorized access. Please login again.");
-                window.location.href = "login";
-              }
-              return response.json();
-            })
-            .then((data) => {
-              // Update HTML content with the received data
-              console.log(data);
-              // Clear existing rows
-              $("#classes").empty();
-              // Loop through the data and create table rows
-              data.forEach((classData) => {
-                $("#classes").append(`
-                                <tr>
-                                    <td><a href="#" id="${classData.id}" class="class-link">${classData.name}</a></td>
-                                    <td>${classData.description}</td>
-                                    <td>${classData.year}</td>
-                                </tr>
-                            `);
-              });
-              $(".class-link").click(function (e) {
-                e.preventDefault();
-                const classId = $(this).attr("id");
-                // Redirect to the URL based on class ID
-                window.location.href = `/class/${classId}`;
-              });
-            });
+          }).then((response) => {
+            if (response.status === 401) {
+              alert("Unauthorized access. Please login again.");
+              console.error("Unauthorized access. Please login again.");
+              window.location.href = "/login";
+            }
+            return response.json();
+          });
         } else {
           // Redirect to login page if token is not available
-          window.location.href = "login";
+          window.location.href = "/login";
         }
       });
     </script>
 
     <div class="container w-50">
-      <h1>List of my classes</h1>
+      <h1>List of assignments</h1>
 
       <table class="table table-hover table-sm">
         <thead>
-          <td>Class Name</td>
+          <td>Assignment Name</td>
           <td>Description</td>
-          <td>Year</td>
+          <td>Github</td>
         </thead>
-        <tbody id="classes"></tbody>
+        {%for ass in class_info.assignments%}
+        <tr>
+          <td>
+            <a href="{{class_info.id}}/assignment/{{ass.id}}"
+              >{{ ass.filename }}</a
+            >
+          </td>
+          <td>{{ ass.description }}</td>
+          <td><a href="{{ ass.github_url }}">{{ ass.github_url }}</a></td>
+        </tr>
+        {%endfor%}
       </table>
     </div>
 

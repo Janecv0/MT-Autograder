@@ -62,13 +62,15 @@ def get_points_from_test(test):
     """
 
     pass_point, fail_point = 0, 0
+    error_message = ""
 
     if test["outcome"] == "passed":
         pass_point = int(test["nodeid"][-1])
     elif test["outcome"] == "failed":
         fail_point = int(test["nodeid"][-1])
+        error_message = test["call"]["crash"]["message"]
 
-    return pass_point, fail_point
+    return pass_point, fail_point, error_message
 
 
 def mark_test(pass_points, fail_points, letter_grade=False):
@@ -115,11 +117,12 @@ def get_test_points(tests):
     """
 
     pass_points, fail_points = 0, 0
+    error_message = []
     for test in tests:
-        pass_point, fail_point = get_points_from_test(test)
+        pass_point, fail_point, error_message = get_points_from_test(test)
         pass_points += pass_point
         fail_points += fail_point
-    return pass_points, fail_points
+    return pass_points, fail_points, error_message
 
 
 def how_did_we_do(tests, print_to_terminal: bool):
@@ -133,7 +136,7 @@ def how_did_we_do(tests, print_to_terminal: bool):
         dict: A dictionary containing the mark, pass points, and failed points.
     """
 
-    pass_points, fail_points = get_test_points(tests)
+    pass_points, fail_points, error_message = get_test_points(tests)
 
     if print_to_terminal:
         for test in tests:
@@ -146,6 +149,7 @@ def how_did_we_do(tests, print_to_terminal: bool):
         "mark": mark_test(pass_points, fail_points, False),
         "pass_points": pass_points,
         "failed_points": fail_points,
+        "error_message": error_message,
     }
 
 

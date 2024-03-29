@@ -6,7 +6,7 @@ from fastapi import Depends, FastAPI, HTTPException, status, UploadFile, File, R
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 from fastapi.encoders import jsonable_encoder
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -53,14 +53,6 @@ app = FastAPI()
 
 # Jinja2templates
 templates = Jinja2Templates(directory="templates")
-
-
-@app.get("/", response_class=HTMLResponse)
-def read_root(request: Request):
-    """
-    Root endpoint to check if the server is running.
-    """
-    return templates.TemplateResponse("index.html", {"request": request})
 
 
 def match_email(email: str):
@@ -120,6 +112,7 @@ async def login_for_access_token(
     )
     return schemas.Token(access_token=access_token, token_type="bearer")
 
+
 @app.get("/login", response_class=HTMLResponse)
 def login(request: Request):
     """
@@ -133,11 +126,13 @@ def login(request: Request):
     """
     return templates.TemplateResponse("login.html", {"request": request})
 
+
 @app.get("/users/me")
 async def read_users_me(
     request: Request,
     current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
-    db: Session = Depends(get_db),):
+    db: Session = Depends(get_db),
+):
     """
     Get the current authenticated user.
 
@@ -149,9 +144,9 @@ async def read_users_me(
     """
     return crud.get_user(db, user_id=current_user.id)
 
+
 @app.get("/me", response_class=HTMLResponse)
 async def read_users_me(request: Request):
-
     return templates.TemplateResponse("me.html", {"request": request})
 
 
@@ -178,7 +173,6 @@ async def read_own_items(
 
 @app.get("/create/user/", response_class=HTMLResponse)
 def create_user(request: Request):
-
     return templates.TemplateResponse("create_user.html", {"request": request})
 
 
@@ -585,9 +579,10 @@ def update_assignment(
 """File upload"""
 
 
-@app.post("/create_item/{ass_id}}")
+@app.post("/create_item")
 async def create_upload_file(
     ass_id: int,
+    user_id: int,
     current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
     item: schemas.ItemCreate,
     db: Session = Depends(get_db),
@@ -605,10 +600,10 @@ async def create_upload_file(
     - The created item.
 
     """
-    if crud.get_item(db, f"HW_{ass_id}_{current_user.id}") is None:
+    if crud.get_item(db, f"HW_{ass_id}_{user_id}") is None:
         return crud.create_user_item(db, item, current_user.id, ass_id)
     else:
-        raise HTTPException(status_code=401, detail="Item already exists.")
+        raise HTTPException(status_code=409, detail="Item already exists.")
 
 
 @app.post("/uploadfile/{ass_id}")
@@ -646,26 +641,15 @@ async def create_upload_file(
 @app.post("/test/{ass_id}")
 async def run(
     ass_id: int,
+    user_id: int,
     current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
     db: Session = Depends(get_db),
 ):
-    """
-    Run the autograder for a given assignment.
-
-    Parameters:
-    - ass_id (int): The ID of the assignment.
-    - current_user (schemas.User): The current authenticated user.
-    - db (Session, optional): The database session. Defaults to Depends(get_db).
-
-    Returns:
-    - dict: The result of the autograder.
-    """
-
-    resultfunc = run_tests(ass_id, current_user.id)
+    resultfunc = run_tests(ass_id, user_id)
     passed = True if resultfunc["mark"] >= 50 else False
     crud.update_item(
         db=db,
-        item_id=crud.get_item(db, f"HW_{ass_id}_{current_user.id}").id,
+        item_id=crud.get_item(db, f"HW_{ass_id}_{user_id}").id,
         tested=True,
         passed=passed,
         mark=resultfunc["mark"],
@@ -742,25 +726,6 @@ async def create_classroom(
     else:
         raise HTTPException(status_code=401, detail="Not enough permissions")
 
-
-@app.get("/classes")
-async def get_all_classes(
-    # current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
-    request: Request,
-    db: Session = Depends(get_db),
-):
-    """
-    Get a list of classes.
-
-    Args:
-        current_user (User): The current authenticated user.
-        db (Session, optional): The database session. Defaults to Depends(get_db).
-
-    Returns:
-        List[Classrooms]: The list of classrooms.
-    """
-    class_list=crud.get_classrooms(db=db)
-    return templates.TemplateResponse("class_list.html", {"request": request, "class_list": class_list})
 
 @app.get("/class/my")
 async def get_my_classes(
@@ -850,6 +815,27 @@ async def enroll_classroom(
         ),
     )
 
+
+@app.get("/logincheck")
+async def loginCheck(
+    current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)]
+):
+    return HTMLResponse(status_code=200, content="You are logged in")
+
+
+"""
+HTML endpoints
+"""
+
+
+@app.get("/", response_class=HTMLResponse)
+def read_root(request: Request):
+    """
+    Root endpoint to check if the server is running.
+    """
+    return templates.TemplateResponse("index.html", {"request": request})
+
+
 @app.get("/nav")
 async def nav(request: Request):
     """
@@ -857,6 +843,49 @@ async def nav(request: Request):
     """
     return templates.TemplateResponse("nav.html", {"request": request})
 
+
 @app.get("/mypage")
-async def my_page(request:Request):
+async def my_page(request: Request):
     return templates.TemplateResponse("my_page.html", {"request": request})
+
+
+@app.get("/favicon.ico")
+async def favicon():
+    return FileResponse("./images/favicon.jpg")
+
+
+@app.get("/classes")
+async def get_all_classes(
+    # current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    class_list = crud.get_classrooms(db=db)
+    return templates.TemplateResponse(
+        "class_list.html", {"request": request, "class_list": class_list}
+    )
+
+
+@app.get("/class/{class_id}")
+async def get_class(
+    class_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    class_info = crud.get_classroom_by_id(db=db, classroom_id=class_id)
+    return templates.TemplateResponse(
+        "class_info.html", {"request": request, "class_info": class_info}
+    )
+
+
+@app.get("/class/{class_id}/assignment/{assignment_id}")
+async def get_assignment(
+    class_id: int,
+    assignment_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    assignment_info = crud.get_assignment_by_id(db=db, assignment_id=assignment_id)
+    return templates.TemplateResponse(
+        "assignment_info.html", {"request": request, "assignment_info": assignment_info}
+    )
