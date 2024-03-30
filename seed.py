@@ -75,34 +75,26 @@ session.add(classroom)
 
 # Create assignments for the classroom
 assignment1 = Assignment(
-    filename="Assignment1",
+    filename="test_HW_1",
     description="First Assignment",
     owner=teacher,
     classroom=classroom,
+    name="Assignment1",
 )
 assignment2 = Assignment(
-    filename="Assignment2",
+    name="Assignment2",
     description="Second Assignment",
     owner=teacher,
     classroom=classroom,
+    filename="test_HW_2",
 )
 session.add(assignment1)
 session.add(assignment2)
 
 # Add students to the classroom
-students = users[2:]
+students = users[1:]
 for student in students:
     classroom.students.append(student)
-
-# Create items for each student corresponding to the first assignment
-for student in students:
-    item = Item(
-        filename=f"{student.username}_assignment1",
-        description=f"Item for {student.username}",
-        owner=student,
-        assignment=assignment1,
-    )
-    session.add(item)
 
 # Commit the session to the database
 session.commit()

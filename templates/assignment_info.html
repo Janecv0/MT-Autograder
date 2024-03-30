@@ -25,8 +25,18 @@
     <div class="container mt-5">
       <div class="row">
         <div class="col-md-6 offset-md-3">
-          <h3 class="mb-4">Upload a File</h3>
+          <h3 class="mb-4">Upload your solution</h3>
           <form id="uploadForm" enctype="multipart/form-data">
+            <div class="form-group">
+              <label for="descriptionInput">Description:</label>
+              <input
+                type="text"
+                class="form-control"
+                id="descriptionInput"
+                name="description"
+                placeholder="Enter description (not mandatory)"
+              />
+            </div>
             <div class="form-group">
               <label for="formFile" class="form-label">Choose File:</label>
               <input
@@ -37,17 +47,7 @@
                 name="file"
               />
             </div>
-            <!-- Input for description -->
-            <div class="form-group">
-              <label for="descriptionInput">Description:</label>
-              <input
-                type="text"
-                class="form-control"
-                id="descriptionInput"
-                name="description"
-                placeholder="Enter description"
-              />
-            </div>
+
             <button type="submit" class="btn btn-primary mt-3">Upload</button>
           </form>
 
@@ -76,6 +76,32 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script>
       $(document).ready(function () {
+        // Make sure token is available
+        const token = localStorage.getItem("authToken");
+        if (token) {
+          // Check if still logged in
+          fetch("http://127.0.0.1:8000/logincheck", {
+            method: "GET",
+            headers: {
+              Accept: "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          })
+            .then((response) => {
+              if (response.status === 401) {
+                alert("Unauthorized access. Please login again.");
+                console.error("Unauthorized access. Please login again.");
+                window.location.href = "/login";
+              }
+            })
+            .catch((error) => {
+              console.error(error);
+            });
+        } else {
+          // Redirect to login page if token is not available
+          window.location.href = "/login";
+        }
+
         const url = window.location.pathname; // Get the URL path
         const urlParts = url.split("/"); // Split the path by '/'
         const class_id = urlParts[2]; // Get the first number
@@ -84,123 +110,8 @@
         $("#uploadForm").submit(function (event) {
           event.preventDefault();
           var fileData = new FormData($(this)[0]);
-          const token = localStorage.getItem("authToken");
 
-          // Make sure token is available
-          if (token) {
-            // Check if still logged in
-            fetch("http://127.0.0.1:8000/logincheck", {
-              method: "GET",
-              headers: {
-                Accept: "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-            }).then((response) => {
-              if (response.status === 401) {
-                alert("Unauthorized access. Please login again.");
-                console.error("Unauthorized access. Please login again.");
-                window.location.href = "/login";
-              }
-
-              // Create item in DB
-              fetch("http://127.0.0.1:8000/users/me", {
-                method: "GET",
-                headers: {
-                  Accept: "application/json",
-                  Authorization: `Bearer ${token}`,
-                },
-              })
-                .then((response) => response.json())
-
-                .then((data) => {
-                  const ID = parseInt(data.id);
-
-                  const description =
-                    document.getElementById("descriptionInput").value;
-                  var formData = {
-                    assignment_id: ass_id,
-                    description: description,
-                  };
-
-                  fetch(
-                    `http://127.0.0.1:8000/create_item?ass_id=${ass_id}&user_id=${ID}`,
-                    {
-                      method: "POST",
-                      headers: {
-                        Accept: "application/json",
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": "application/json",
-                      },
-                      body: JSON.stringify(formData),
-                    }
-                  )
-                    .then((response) => response.json())
-                    .then((data) => {
-                      console.log(data.message);
-                    })
-                    .catch((error) => {
-                      console.error("Error creating item in DB!", error);
-                    });
-                })
-                .catch((error) => {
-                  console.error(error);
-                });
-
-              // Upload file
-              fetch(`http://127.0.0.1:8000/uploadfile/${ass_id}`, {
-                method: "POST",
-                headers: {
-                  Accept: "application/json",
-                  Authorization: `Bearer ${token}`,
-                },
-                body: fileData,
-              })
-                .then((response) => response.json())
-                .then((data) => {
-                  $("#status").html(
-                    '<div class="alert alert-success">' +
-                      data.message +
-                      "</div>"
-                  );
-                })
-                .catch((error) => {
-                  $("#status").html(
-                    '<div class="alert alert-danger">Error uploading file!</div>'
-                  );
-                });
-
-              return false;
-            });
-          } else {
-            // Redirect to login page if token is not available
-            window.location.href = "/login";
-          }
-        });
-
-        $("#testButton").click(function () {
-          const token = localStorage.getItem("authToken");
-
-          if (token) {
-            // Make a GET request to the API endpoint with the retrieved token
-            fetch("http://127.0.0.1:8000/logincheck", {
-              method: "GET",
-              headers: {
-                Accept: "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-            }).then((response) => {
-              if (response.status === 401) {
-                alert("Unauthorized access. Please login again.");
-                console.error("Unauthorized access. Please login again.");
-                window.location.href = "/login";
-              }
-              return response.json();
-            });
-          } else {
-            // Redirect to login page if token is not available
-            window.location.href = "/login";
-          }
-
+          // Create item in DB
           fetch("http://127.0.0.1:8000/users/me", {
             method: "GET",
             headers: {
@@ -209,34 +120,80 @@
             },
           })
             .then((response) => response.json())
-
             .then((data) => {
               const ID = parseInt(data.id);
-              fetch(`http://127.0.0.1:8000/test/${ass_id}?user_id=${ID}`, {
-                method: "POST",
-                headers: {
-                  Accept: "application/json",
-                  Authorization: `Bearer ${token}`,
-                },
-              })
+              const description = $("#descriptionInput").val();
+              var formData = {
+                assignment_id: ass_id,
+                description: description,
+              };
+              fetch(
+                `http://127.0.0.1:8000/create_item?ass_id=${ass_id}`,
+                {
+                  method: "POST",
+                  headers: {
+                    Accept: "application/json",
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify(formData),
+                }
+              )
                 .then((response) => response.json())
                 .then((data) => {
-                  //console.log(data['result']);
-                  $("#classes").empty();
-                  // Loop through the data and create table rows
-
-                  $("#classes").append(`
-                                <tr>
-                                    <td>${data["result"]["mark"]}</td>
-                                    <td>${data["result"]["pass_points"]}</td>
-                                    <td>${data["result"]["failed_points"]}</td>
-                                    <td>${data["result"]["error_message"]}</td>
-                                </tr>
-                            `);
+                  console.log(data.message);
                 })
                 .catch((error) => {
-                  console.error(error);
+                  console.error("Error creating item in DB!", error);
                 });
+            })
+            .catch((error) => {
+              console.error(error);
+            });
+
+          // Upload file
+          fetch(`http://127.0.0.1:8000/uploadfile/${ass_id}`, {
+            method: "POST",
+            headers: {
+              Accept: "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: fileData,
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              $("#status").html(
+                `<div class="alert alert-success">${data.message}</div>`
+              );
+            })
+            .catch((error) => {
+              $("#status").html(
+                '<div class="alert alert-danger">Error uploading file!</div>'
+              );
+            });
+
+          return false;
+        });
+
+        $("#testButton").click(function () {
+          fetch(`http://127.0.0.1:8000/test/${ass_id}`, {
+            method: "POST",
+            headers: {
+              Accept: "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              $("#classes").empty();
+              $("#classes").append(`
+                      <tr>
+                          <td>${data["result"]["mark"]}</td>
+                          <td>${data["result"]["pass_points"]}</td>
+                          <td>${data["result"]["failed_points"]}</td>
+                          <td>${data["result"]["error_message"]}</td>
+                      </tr>
+                  `);
             })
             .catch((error) => {
               console.error(error);

@@ -83,7 +83,7 @@ def get_user_by_role(db: Session, role: str):
     )
 
 
-def get_user_role(db: Session, user_id: str):
+def get_user_role(db: Session, user_id: int):
     """
     Return the role of the user with the given user_id
 
@@ -264,7 +264,8 @@ def is_teacher(db: Session, user_id: int):
         db.query(models.User)
         .join(models.User.roles)
         .filter(models.User.id == user_id)
-        .filter(models.Role.slug == "Teacher")
+        .filter(models.Role.name == "Teacher")
+        .first()
         is not None
     ):
         return True
@@ -288,7 +289,8 @@ def is_admin(db: Session, user_id: int):
         db.query(models.User)
         .join(models.User.roles)
         .filter(models.User.id == user_id)
-        .filter(models.Role.slug == "Admin")
+        .filter(models.Role.name == "Admin")
+        .first()
         is not None
     ):
         return True
@@ -307,12 +309,12 @@ def is_super_teacher(db: Session, user_id: int):
     Returns:
         bool: True if the user is a teacher, False otherwise.
     """
-
     if (
         db.query(models.User)
         .join(models.User.roles)
         .filter(models.User.id == user_id)
-        .filter(models.Role.slug == "Super Teacher")
+        .filter(models.Role.name == "Super Teacher")
+        .first()
         is not None
     ):
         return True
@@ -320,14 +322,27 @@ def is_super_teacher(db: Session, user_id: int):
         return False
 
 
+def is_teacher_plus(db: Session, user_id: int):
+    return (
+        is_teacher(db, user_id)
+        or is_super_teacher(db, user_id)
+        or is_admin(db, user_id)
+    )
+
+
+def is_super_teacher_plus(db: Session, user_id: int):
+    return is_super_teacher(db, user_id) or is_admin(db, user_id)
+
+
 def update_item(
     db: Session,
     item_id: int,
-    tested: bool,
-    passed: bool,
-    mark: int,
-    pass_point: int,
-    fail_point: int,
+    tested: bool | None = None,
+    passed: bool | None = None,
+    mark: int | None = None,
+    pass_point: int | None = None,
+    fail_point: int | None = None,
+    description: str | None = None,
 ):
     """
     Update an item in the database with the provided information.
@@ -340,16 +355,24 @@ def update_item(
         mark (int): The mark assigned to the item.
         pass_point (int): The passing point for the item.
         fail_point (int): The failing point for the item.
+        description (str): The description of the item.
 
     Returns:
         Item: The updated item.
     """
     db_item = db.query(models.Item).filter(models.Item.id == item_id).first()
-    db_item.tested = tested
-    db_item.passed = passed
-    db_item.mark = mark
-    db_item.pass_point = pass_point
-    db_item.fail_point = fail_point
+    if description is not None:
+        db_item.description = description
+    if tested is not None:
+        db_item.tested = tested
+    if passed is not None:
+        db_item.passed = passed
+    if mark is not None:
+        db_item.mark = mark
+    if pass_point is not None:
+        db_item.pass_point = pass_point
+    if fail_point is not None:
+        db_item.fail_point = fail_point
 
     db.commit()
     db.refresh(db_item)
@@ -429,7 +452,9 @@ def delete_user(db: Session, user_id: int):
     return {"message": "User deleted successfully"}
 
 
-def create_assignment(db: Session, assignment: schemas.AssignmentCreate, user_id: int):
+def create_assignment(
+    db: Session, assignment: schemas.AssignmentCreate, user_id: int, classroom_id: int
+):
     """
     Create a new assignment in the database.
 
@@ -444,14 +469,17 @@ def create_assignment(db: Session, assignment: schemas.AssignmentCreate, user_id
     db_assignment = models.Assignment(
         description=assignment.description,
         github_url=assignment.github_url,
-        filename=assignment.filename,
+        filename=None,
+        name=assignment.name,
     )
-    db_assignment.filename = assignment.filename
     db_assignment.owner_id = user_id
+    db_assignment.classroom_id = classroom_id
     db.add(db_assignment)
     db.commit()
     db.refresh(db_assignment)
-    return db_assignment
+    return update_assignment(
+        db=db, assignment_id=db_assignment.id, filename=f"test_HW_{db_assignment.id}"
+    )
 
 
 def get_assignments(db: Session, skip: int = 0, limit: int = 100):
@@ -506,9 +534,9 @@ def get_my_assignments(db: Session, user_id: int):
 def update_assignment(
     db: Session,
     assignment_id: int,
-    description: str,
-    github_url: str,
-    filename: str,
+    description: str | None = None,
+    github_url: str | None = None,
+    filename: str | None = None,
 ):
     """
     Update an assignment in the database with the provided information.
@@ -528,9 +556,12 @@ def update_assignment(
         .filter(models.Assignment.id == assignment_id)
         .first()
     )
-    db_assignment.description = description
-    db_assignment.github_url = github_url
-    db_assignment.filename = filename
+    if description is not None:
+        db_assignment.description = description
+    if github_url is not None:
+        db_assignment.github_url = github_url
+    if filename is not None:
+        db_assignment.filename = filename
     db.commit()
     db.refresh(db_assignment)
     return db_assignment
@@ -639,12 +670,16 @@ def is_student_in_classroom(db: Session, classroom_id: int, student_id: int):
     Returns:
         bool: True if the student is in the classroom, False otherwise.
     """
-    db_classroom = db.query(models.Classroom).join(models.Classroom.students).all()
-    for student in db_classroom:
-        if student.id == student_id:
-            return True
-    else:
-        return False
+    db_classroom = (
+        db.query(models.Classroom).filter(models.Classroom.id == classroom_id).first()
+    )
+    if db_classroom is not None:
+        for student in db_classroom.students:
+            if student.id == student_id:
+                return True
+        else:
+            return False
+    return None
 
 
 def enroll_student(db: Session, classroom_id: int, user_id: int):
@@ -679,3 +714,20 @@ def get_my_classrooms(db: Session, user_id: int):
         .filter(models.User.id == user_id)
         .all()
     )
+
+
+def get_item_pass(db: Session, user_id: int, ass_id: int):
+    """
+    Return true if users id item , which corresponds to assignment it is passed
+    """
+
+    ass = (
+        db.query(models.Item)
+        .filter(models.Item.assignment_id == ass_id)
+        .filter(models.Item.owner_id == user_id)
+        .first()
+    )
+    if ass is not None:
+        return ass.passed
+    else:
+        return False

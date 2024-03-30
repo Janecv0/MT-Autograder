@@ -145,11 +145,6 @@ async def read_users_me(
     return crud.get_user(db, user_id=current_user.id)
 
 
-@app.get("/me", response_class=HTMLResponse)
-async def read_users_me(request: Request):
-    return templates.TemplateResponse("me.html", {"request": request})
-
-
 @app.get("/users/me/items/")
 async def read_own_items(
     current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
@@ -224,7 +219,7 @@ def read_users(
     Raises:
         HTTPException: If the current user is not a teacher.
     """
-    if crud.is_teacher(db, current_user.id):
+    if crud.is_teacher_plus(db, current_user.id):
         return crud.get_users(db, skip=skip, limit=limit)
 
     else:
@@ -251,7 +246,7 @@ def read_user_id(
     Raises:
         HTTPException: If the current user is not a teacher or the user is not found.
     """
-    if crud.is_teacher(db, current_user.id):
+    if crud.is_teacher_plus(db, current_user.id):
         db_user = crud.get_user(db, user_id=user_id)
         if db_user is None:
             raise HTTPException(status_code=404, detail="User not found")
@@ -280,7 +275,7 @@ def read_user_username(
     Raises:
         HTTPException: If the current user is not a teacher or the user is not found.
     """
-    if crud.is_teacher(db, current_user.id):
+    if crud.is_teacher_plus(db, current_user.id):
         db_user = crud.get_user_by_username(db, username=username)
         if db_user is None:
             raise HTTPException(status_code=404, detail="User not found")
@@ -309,7 +304,7 @@ def read_user_email(
     Raises:
         HTTPException: If the current user is not a teacher or the user is not found.
     """
-    if crud.is_teacher(db, current_user.id):
+    if crud.is_teacher_plus(db, current_user.id):
         db_user = crud.get_user_by_email(db, email=email)
         if db_user is None:
             raise HTTPException(status_code=404, detail="User not found")
@@ -356,6 +351,44 @@ def read_user_role(
         str: The role of the current authenticated user.
     """
     return crud.get_user_role(db, current_user.id)
+
+
+@app.get("/users/teacherplus/")
+def is_teacher_or_higher(
+    current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
+    db: Session = Depends(get_db),
+):
+    """
+    Get the role of the current authenticated user.
+
+    Args:
+        current_user (User): The current authenticated user.
+        db (Session, optional): The database session. Defaults to Depends(get_db).
+
+    Returns:
+        str: The role of the current authenticated user.
+    """
+    return crud.is_teacher_plus(db, current_user.id)
+
+
+@app.get("/users/superteacherplus/")
+def is_teacher_or_higher(
+    current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
+    db: Session = Depends(get_db),
+):
+    """
+    Get the role of the current authenticated user.
+
+    Args:
+        current_user (User): The current authenticated user.
+        db (Session, optional): The database session. Defaults to Depends(get_db).
+
+    Returns:
+        str: The role of the current authenticated user.
+    """
+    return crud.is_admin(db, current_user.id) or crud.is_super_teacher(
+        db, current_user.id
+    )
 
 
 @app.get("/items/", response_model=list[schemas.Item])
@@ -442,7 +475,7 @@ def delete_user(
     Raises:
         HTTPException: If the current user does not have enough permissions.
     """
-    if not crud.is_teacher(db, current_user.id):
+    if not crud.is_teacher_plus(db, current_user.id):
         raise HTTPException(status_code=401, detail="Not enough permissions")
     return crud.delete_user(db=db, user_id=user_id)
 
@@ -473,10 +506,11 @@ async def update_user_role(
 """Assignment"""
 
 
-@app.post("/create_assignment/")
+@app.post("/class/{class_id}/assignment/create")
 async def create_assignment(
     current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
     assignment: schemas.AssignmentCreate,
+    class_id: int,
     db: Session = Depends(get_db),
 ):
     """
@@ -493,10 +527,10 @@ async def create_assignment(
     Raises:
         HTTPException: If the current user does not have enough permissions.
     """
-    if crud.is_teacher(db, current_user.id):
+    if crud.is_teacher_plus(db, user_id=current_user.id):
         return crud.create_assignment(
-            db=db, assignment=assignment, user_id=current_user.id
-        )
+            db=db, assignment=assignment, user_id=current_user.id, classroom_id=class_id
+        ).id
     else:
         raise HTTPException(status_code=401, detail="Not enough permissions")
 
@@ -582,7 +616,6 @@ def update_assignment(
 @app.post("/create_item")
 async def create_upload_file(
     ass_id: int,
-    user_id: int,
     current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
     item: schemas.ItemCreate,
     db: Session = Depends(get_db),
@@ -600,10 +633,13 @@ async def create_upload_file(
     - The created item.
 
     """
-    if crud.get_item(db, f"HW_{ass_id}_{user_id}") is None:
+    item_in_DB = crud.get_item(db, f"HW_{ass_id}_{current_user.id}")
+    if item_in_DB is None:
         return crud.create_user_item(db, item, current_user.id, ass_id)
     else:
-        raise HTTPException(status_code=409, detail="Item already exists.")
+        return crud.update_item(
+            db=db, item_id=item_in_DB.id, description=item.description
+        )
 
 
 @app.post("/uploadfile/{ass_id}")
@@ -635,21 +671,49 @@ async def create_upload_file(
         return {"message": f"{file_name} has been uploaded successfully!"}
 
 
+@app.post("/uploadfile/assignment/{ass_id}")
+async def upload_file_ass(
+    ass_id: int,
+    current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
+    file: UploadFile = File(...),
+):
+    """
+    Creates and upload file with the given assignment ID, current user, and file.
+
+    Parameters:
+        ass_id (int): The ID of the assignment.
+        current_user (schemas.User): The current authenticated user.
+        file (UploadFile): The file to be uploaded.
+
+    Returns:
+        dict: A dictionary containing the message indicating the success of the upload.
+    """
+    prefix = f"test_HW_{ass_id}"
+    if not file:
+        return {"message": "No upload file sent"}
+    else:
+        file_extension = file.filename.split(".").pop()
+        file_name = f"{prefix}.{file_extension}"
+        with open(file_name, "wb") as f:
+            content = await file.read()
+            f.write(content)
+        return {"message": f"{file_name} has been uploaded successfully!"}
+
+
 """Run tests"""
 
 
 @app.post("/test/{ass_id}")
 async def run(
     ass_id: int,
-    user_id: int,
     current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
     db: Session = Depends(get_db),
 ):
-    resultfunc = run_tests(ass_id, user_id)
+    resultfunc = run_tests(ass_id, current_user.id)
     passed = True if resultfunc["mark"] >= 50 else False
     crud.update_item(
         db=db,
-        item_id=crud.get_item(db, f"HW_{ass_id}_{user_id}").id,
+        item_id=crud.get_item(db, f"HW_{ass_id}_{current_user.id}").id,
         tested=True,
         passed=passed,
         mark=resultfunc["mark"],
@@ -719,7 +783,7 @@ async def create_classroom(
         HTTPException: If the current user does not have enough permissions.
     """
 
-    if crud.is_teacher(db, current_user.id):
+    if crud.is_admin(db, current_user.id):
         return crud.create_classroom(
             db=db, classroom=classroom, user_id=current_user.id
         )
@@ -745,7 +809,7 @@ async def get_my_classes(
     return crud.get_my_classrooms(db=db, user_id=current_user.id)
 
 
-@app.post("/enroll_classroom/{class_id}")
+@app.post("/class/{class_id}/enroll/")
 async def enroll_classroom(
     class_id: int,
     email_list: str,
@@ -770,7 +834,7 @@ async def enroll_classroom(
     email_list = email_list.split(",")
     for email in email_list:
         if is_email(email):
-            if crud.is_teacher(db, current_user.id):
+            if crud.is_teacher_plus(db, current_user.id):
                 if crud.is_user_in_db(db, email):
                     if not crud.is_student_in_classroom(db, email, class_id):
                         enrolled_users.append(email)
@@ -870,12 +934,23 @@ async def get_all_classes(
 async def get_class(
     class_id: int,
     request: Request,
+    user_id: int | None = None,
     db: Session = Depends(get_db),
 ):
+    ass_pass = []
     class_info = crud.get_classroom_by_id(db=db, classroom_id=class_id)
-    return templates.TemplateResponse(
-        "class_info.html", {"request": request, "class_info": class_info}
-    )
+    if user_id is not None:
+        for ass in class_info.assignments:
+            ass_pass.append(crud.get_item_pass(db=db, user_id=user_id, ass_id=ass.id))
+        return templates.TemplateResponse(
+            "class_info.html",
+            {"request": request, "class_info": class_info, "ass_pass": ass_pass},
+        )
+    else:
+        return templates.TemplateResponse(
+            "class_info.html",
+            {"request": request, "class_info": class_info, "ass_pass": None},
+        )
 
 
 @app.get("/class/{class_id}/assignment/{assignment_id}")
@@ -889,3 +964,25 @@ async def get_assignment(
     return templates.TemplateResponse(
         "assignment_info.html", {"request": request, "assignment_info": assignment_info}
     )
+
+
+@app.get("/class/{class_id}/create_assignment")
+async def create_assignment(
+    request: Request,
+):
+    return templates.TemplateResponse("create_ass.html", {"request": request})
+
+
+@app.get("/me", response_class=HTMLResponse)
+async def read_users_me(request: Request):
+    return templates.TemplateResponse("me.html", {"request": request})
+
+
+@app.get("/create_classroom", response_class=HTMLResponse)
+async def read_users_me(request: Request):
+    return templates.TemplateResponse("create_class.html", {"request": request})
+
+
+@app.get("/class/{class_id}/enroll", response_class=HTMLResponse)
+async def read_users_me(request: Request):
+    return templates.TemplateResponse("enroll.html", {"request": request})

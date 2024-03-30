@@ -39,8 +39,6 @@
           })
             .then((response) => {
               if (response.status === 401) {
-                alert("Unauthorized access. Please login again.");
-                console.error("Unauthorized access. Please login again.");
                 window.location.href = "login";
               }
               return response.json();

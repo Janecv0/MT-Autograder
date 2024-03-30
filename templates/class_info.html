@@ -26,7 +26,6 @@
       $(document).ready(function () {
         // Retrieve token from local storage
         const token = localStorage.getItem("authToken");
-
         // Make sure token is available
         if (token) {
           // Make a GET request to the API endpoint with the retrieved token
@@ -51,26 +50,116 @@
       });
     </script>
 
+    <script>
+      const url = window.location.pathname;
+      const urlParts = url.split("/");
+      const class_id = urlParts[2];
+      const token = localStorage.getItem("authToken");
+
+      // Check if the user is a teacher or higher and display the create assignment button
+      function checkUserRole() {
+        fetch("/users/teacherplus/", {
+          method: "GET",
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data === true) {
+              document.getElementById("createAssignmentBtn").style.display =
+                "inline-block";
+              document.getElementById("enrollBtn").style.display =
+                "inline-block";
+            } else {
+              document.getElementById("createAssignmentBtn").style.display =
+                "none";
+              document.getElementById("enrollBtn").style.display =
+                "none";
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+      //
+      function getUserAssignmentStatus() {
+        fetch("/users/me", {
+          method: "GET",
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            const userId = data.id;
+
+            // Dynamically generate the link based on the user_id
+            const link = `/class/${class_id}?user_id=${userId}`;
+            document.getElementById("dynamicLink").href = link;
+          })
+          .catch((error) => {
+            // Handle error if AJAX request fails
+            console.error("Error:", error);
+          });
+      }
+
+      // Call the function when the page loads
+      window.onload = function () {
+        checkUserRole();
+        getUserAssignmentStatus();
+      };
+    </script>
+
     <div class="container w-50">
       <h1>List of assignments</h1>
+      <a
+        id="createAssignmentBtn"
+        href="/class/{{class_info.id}}/create_assignment"
+        class="btn btn-primary"
+        style="display: none"
+        >Create New Assignment</a>
+
+        <a
+        id="enrollBtn"
+        href="/class/{{class_info.id}}/enroll"
+        class="btn btn-primary"
+        style="display: none"
+        >Enroll to this class</a>
+
+      <a id="dynamicLink" class="btn btn-primary">Check status</a>
 
       <table class="table table-hover table-sm">
         <thead>
           <td>Assignment Name</td>
           <td>Description</td>
           <td>Github</td>
+          <td>Status</td>
         </thead>
-        {%for ass in class_info.assignments%}
-        <tr>
-          <td>
-            <a href="{{class_info.id}}/assignment/{{ass.id}}"
-              >{{ ass.filename }}</a
-            >
-          </td>
-          <td>{{ ass.description }}</td>
-          <td><a href="{{ ass.github_url }}">{{ ass.github_url }}</a></td>
-        </tr>
-        {%endfor%}
+        <tbody>
+          {% set ns = namespace(count=0) %} {% for ass in class_info.assignments
+          %}
+          <tr>
+            <td>
+              <a href="{{ class_info.id }}/assignment/{{ ass.id }}"
+                >{{ ass.name }}</a
+              >
+            </td>
+            <td>{{ ass.description }}</td>
+            <td><a href="{{ ass.github_url }}">link</a></td>
+            <td>{% if ass_pass is not none
+              %} {% if ass_pass[ns.count] %}
+              <span class="badge bg-success">Passed</span>
+              {% else %}
+              <span class="badge bg-danger">Failed</span>
+              {% endif %} {% endif %}
+            </td>
+            {% set ns.count = ns.count + 1 %}
+          </tr>
+          {% endfor %}
+        </tbody>
       </table>
     </div>
 

@@ -33,6 +33,9 @@
               <p class="card-text">
                 <strong>Email:</strong> <span id="email"></span>
               </p>
+              <p class="card-text">
+                <strong>Role:</strong> <span id="role"></span>
+              </p>
               <p id="error" class="text-danger"></p>
             </div>
           </div>
@@ -47,7 +50,6 @@
       $(document).ready(function () {
         // Retrieve token from local storage
         const token = localStorage.getItem("authToken");
-
         // Make sure token is available
         if (token) {
           // Make a GET request to the API endpoint with the retrieved token
@@ -58,20 +60,39 @@
               Authorization: `Bearer ${token}`,
             },
           })
-            .then((response) => response.json())
+          .then((response) => {
+            if (response.status === 401) {
+              window.location.href = "/login";
+            }
+            return response.json();
+          })
             .then((data) => {
               // Update HTML content with the received data
               $("#name").text(data.username);
               $("#email").text(data.email);
-            })
+
+                // Display role based on the received data
+                fetch("http://127.0.0.1:8000/users/role/", {
+                  method: "GET",
+                  headers: {
+                    Accept: "application/json",
+                    Authorization: `Bearer ${token}`,
+                  },
+                })
+                  .then((response) => response.json())
+                  .then((data) => {
+                    console.log(data);
+                    $("#role").text(data);
+                  }); // Add a closing parenthesis and semicolon here
+              })
             .catch((error) => {
               console.error("Error fetching data:", error);
               // Display error message if there's an issue with fetching data
               $("#error").text("Error fetching data. Please try again later.");
             });
         } else {
-          // Display error message if token is not available
-          $("#error").text("Authentication token not found. Please log in.");
+          // Redirect to login page if token is not available
+          window.location.href = "/login";
         }
       });
     </script>

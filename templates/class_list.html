@@ -33,13 +33,41 @@
         </thead>
         {%for class in class_list%}
         <tr>
-          <td>{{ class.name }}</td>
+          <td><a href="/class/{{class.id}}">{{ class.name }}</a></td>
           <td>{{ class.description }}</td>
           <td>{{ class.year }}</td>
         </tr>
         {%endfor%}
       </table>
     </div>
+
+    <script>
+      $(document).ready(function () {
+        // Make sure token is available
+        const token = localStorage.getItem("authToken");
+        if (token) {
+          // Check if still logged in
+          fetch("http://127.0.0.1:8000/logincheck", {
+            method: "GET",
+            headers: {
+              Accept: "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          })
+            .then((response) => {
+              if (response.status === 401) {
+                window.location.href = "/login";
+              }
+            })
+            .catch((error) => {
+              console.error(error);
+            });
+        } else {
+          // Redirect to login page if token is not available
+          window.location.href = "/login";
+        }
+      });
+    </script>
 
     <script
       src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"

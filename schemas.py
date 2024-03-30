@@ -105,9 +105,10 @@ class AssignmentBase(BaseModel):
     Base model for an assignment.
     """
 
+    name: str
     description: str | None = None
     github_url: str | None = None
-    filename: str
+    filename: str | None = None
 
 
 class AssignmentCreate(AssignmentBase):

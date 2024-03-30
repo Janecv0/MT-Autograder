@@ -95,6 +95,7 @@ class Assignment(Base):
     __tablename__ = "assignments"
 
     id = Column(Integer, primary_key=True)
+    name = Column(String, index=True, default=None)
     filename = Column(String, index=True, default=None)
     description = Column(String, default=None)
     github_url = Column(String, default=None)
