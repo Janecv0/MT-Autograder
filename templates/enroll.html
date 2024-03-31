@@ -86,7 +86,6 @@
 
                                         const email_list = document.getElementById("studentListInput").value;
                                         
-                                        console.log(formData);
                                         fetch(`http://127.0.0.1:8000/class/${class_id}/enroll/?class_id=${class_id}&email_list=${email_list}`, {
                                             method: "POST",
                                             headers: {
@@ -98,7 +97,7 @@
                                         })
                                             .then((response) => response.json())
                                             .then((data) => {
-                                                console.log(data.message);
+                                  
                                                 alert(data.message);
                                             })
                                             .catch((error) => {

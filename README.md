@@ -33,16 +33,44 @@ MAIL_FROM=""
 MAIL_SERVER=""
 
 ```
+### Seed the DB
+Run `seed.py` it creates db, with dummy users, classes, assignments, etc.
 
 ### Start uvicorn server
 ```
 uvicorn main:app --reload
 ```
+
+### Try it!
+Go to ```http://127.0.0.1:8000/``` and try it yourself. There are multiple users to try:
+
+| login    | password |
+|----------|----------|
+| admin    | 1234     |
+| teacher  | 1234     |
+| student1 | 1234     |
+| student2 | 1234     |
+| student3 | 1234     |
+
+
 ### Basic usage now possible
-Create user (emails must be different from other users), you can have only one role (as of now) either `Student` or `Teacher`. This gives you different permissions. First make `Teacher` role, login using lock icon and create assignment (and upload test file - not implemented yet). Now you can login into `Student` account and create item (homework), where assignment id must be entered. After that you can upload homework file. Using test endpoint and adding assignment_id the homework will be tested, output will be shown and automatically added to your item in database. 
+Login to the website using one of logins above. Depending on what user(role) did you choose, you can try different things.
 
-With `Teacher` account you can see and find all students and items. `Student` can only see info about himself and theirs items.
+Role: Student
 
+After you login, you are automatically redirected to page that shows all classes that you were enrolled in. You can click on class name, which will send you to list od assignments of that class. There is also a button that will show you status of assignments that you should do. You can click either on link to github or on name of assignment, which will redirect you to form in which you can submit and test your solution and see outcome including pytest error messages .
+
+Role: Teacher
+
+With `Teacher` account you can have no classes yet, but you can see classes in navigational panel Classes. As a teacher you can do everything that student can and more. Multiple buttons should show up such as: Create New Assignments, Enroll to this class and Enrolled users (list of students in this class).
+
+Role: Super teacher
+You can under Admin dropdown menu create new class. Otherwise same as Teacher
+
+Role: Admin
+You can do ANYTHING YOU WANT, jk. You can change roles of user now, but soon you will be able to pop them from DB.
+
+### Assignment test file
 Each assignment file to test hw must start with this code for importing students code.
  ```
 import importlib

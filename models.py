@@ -26,9 +26,8 @@ class User(Base):
     username = Column(String, unique=True, index=True)
     email = Column(String, unique=True, index=True)
     hashed_password = Column(String)
-    roles = relationship(
-        "Role", secondary="user_roles", back_populates="users", passive_deletes=True
-    )  # many to many
+    role_id = Column(Integer, ForeignKey("roles.id"))  # one to many
+    role = relationship("Role", back_populates="users")
     is_active = Column(Boolean, default=True)
     items = relationship("Item", back_populates="owner")
     own_assignments = relationship("Assignment", back_populates="owner")  # one to many
@@ -165,17 +164,4 @@ class Role(Base):
     name = Column(String(80), nullable=False)
     slug = Column(String(80), nullable=False, unique=True)
 
-    users = relationship(
-        "User", secondary="user_roles", back_populates="roles", passive_deletes=True
-    )
-
-
-class UserRole(Base):
-    __tablename__ = "user_roles"
-
-    user_id = Column(
-        Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
-    )
-    role_id = Column(
-        Integer, ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True
-    )
+    users = relationship("User", back_populates="role", passive_deletes=True)  # one to many

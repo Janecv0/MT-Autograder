@@ -372,7 +372,7 @@ def is_teacher_or_higher(
 
 
 @app.get("/users/superteacherplus/")
-def is_teacher_or_higher(
+def is_superteacher_or_higher(
     current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
     db: Session = Depends(get_db),
 ):
@@ -389,7 +389,23 @@ def is_teacher_or_higher(
     return crud.is_admin(db, current_user.id) or crud.is_super_teacher(
         db, current_user.id
     )
+    
+@app.get("/users/admin/")
+def is_admin(
+    current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
+    db: Session = Depends(get_db),
+):
+    """
+    Get the role of the current authenticated user.
 
+    Args:
+        current_user (User): The current authenticated user.
+        db (Session, optional): The database session. Defaults to Depends(get_db).
+
+    Returns:
+        str: The role of the current authenticated user.
+    """
+    return crud.is_admin(db, current_user.id)
 
 @app.get("/items/", response_model=list[schemas.Item])
 def read_items(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
@@ -480,10 +496,10 @@ def delete_user(
     return crud.delete_user(db=db, user_id=user_id)
 
 
-@app.put("/users/me/update_role/")
+@app.post("/update_role/")
 async def update_user_role(
-    role: str,
-    user_id: int,
+    role_id: int,
+    email: str,
     current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
     db: Session = Depends(get_db),
 ):
@@ -492,6 +508,7 @@ async def update_user_role(
 
     Args:
         role (str): The updated role of the user.
+        user_id (int): The ID of the user to update.
         current_user (User): The current authenticated user.
         db (Session, optional): The database session. Defaults to Depends(get_db).
 
@@ -500,7 +517,8 @@ async def update_user_role(
 
     """
     if crud.is_admin(db, current_user.id):
-        return crud.change_user_role(db=db, user_id=user_id, role=role)
+        crud.change_user_role(db=db, email = email, role_id=role_id)
+        return {"message": "Role updated"}
 
 
 """Assignment"""
@@ -871,7 +889,7 @@ async def enroll_classroom(
     return JSONResponse(
         status_code=200,
         content=jsonable_encoder(
-            {
+            {'message': 'Students enrolled successfully',
                 "enrolled_users": enrolled_users,
                 "new_users": new_users,
                 "incorrect_emails": incorrect_emails,
@@ -986,3 +1004,15 @@ async def read_users_me(request: Request):
 @app.get("/class/{class_id}/enroll", response_class=HTMLResponse)
 async def read_users_me(request: Request):
     return templates.TemplateResponse("enroll.html", {"request": request})
+
+@app.get("/changerole")
+async def change_role(request: Request):
+    return templates.TemplateResponse("change_role.html", {"request": request})
+
+@app.get("/class/{class_id}/enrolled_users/")
+async def change_role(request: Request,
+                      class_id:int,
+                      db: Session = Depends(get_db),):
+    users = crud.get_users_in_class(db,class_id)
+    print(users)
+    return templates.TemplateResponse("student_list.html", {"request": request, "users":users})

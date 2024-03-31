@@ -96,10 +96,9 @@ def get_user_role(db: Session, user_id: int):
     """
     return (
         db.query(models.Role)
-        .join(models.User.roles)
+        .join(models.User)
         .filter(models.User.id == user_id)
-        .first()
-        .name
+        .first().name
     )
 
 
@@ -132,6 +131,7 @@ def create_user(db: Session, user: schemas.UserCreate):
         email=user.email,
         hashed_password=hashed_password,
         username=user.username,
+        role_id=4, # default role is student
     )
     db.add(db_user)
     db.commit()
@@ -139,7 +139,7 @@ def create_user(db: Session, user: schemas.UserCreate):
     return db_user
 
 
-def change_user_role(db: Session, user_id: int, role: str):
+def change_user_role(db: Session, email: str, role_id: int):
     """
     Change the role of a user with the given user_id
 
@@ -152,9 +152,8 @@ def change_user_role(db: Session, user_id: int, role: str):
         User: The user with the updated role.
     """
 
-    db_role = db.query(models.Role).filter(models.Role.name == role).first()
-    db_user = db.query(models.User).filter(models.User.id == user_id).first()
-    db_user.roles.append(db_role)
+    db_user = db.query(models.User).filter(models.User.email == email).first()
+    db_user.role_id = role_id
     db.commit()
     db.refresh(db_user)
     return db_user
@@ -259,18 +258,14 @@ def is_teacher(db: Session, user_id: int):
     Returns:
         bool: True if the user is a teacher, False otherwise.
     """
-
-    if (
+    user = (
         db.query(models.User)
-        .join(models.User.roles)
+        .join(models.Role)
         .filter(models.User.id == user_id)
         .filter(models.Role.name == "Teacher")
         .first()
-        is not None
-    ):
-        return True
-    else:
-        return False
+    )
+    return user is not None
 
 
 def is_admin(db: Session, user_id: int):
@@ -285,17 +280,14 @@ def is_admin(db: Session, user_id: int):
         bool: True if the user is a teacher, False otherwise.
     """
 
-    if (
+    user = (
         db.query(models.User)
-        .join(models.User.roles)
+        .join(models.Role)
         .filter(models.User.id == user_id)
         .filter(models.Role.name == "Admin")
         .first()
-        is not None
-    ):
-        return True
-    else:
-        return False
+    )
+    return user is not None
 
 
 def is_super_teacher(db: Session, user_id: int):
@@ -309,17 +301,14 @@ def is_super_teacher(db: Session, user_id: int):
     Returns:
         bool: True if the user is a teacher, False otherwise.
     """
-    if (
+    user = (
         db.query(models.User)
-        .join(models.User.roles)
+        .join(models.Role)
         .filter(models.User.id == user_id)
-        .filter(models.Role.name == "Super Teacher")
+        .filter(models.Role.name == "Super teacher")
         .first()
-        is not None
-    ):
-        return True
-    else:
-        return False
+    )
+    return user is not None
 
 
 def is_teacher_plus(db: Session, user_id: int):
@@ -731,3 +720,13 @@ def get_item_pass(db: Session, user_id: int, ass_id: int):
         return ass.passed
     else:
         return False
+
+
+def get_users_in_class(db:Session, class_id:int):
+    
+    return (
+        db.query(models.User)
+        .join(models.UserClassroom, models.User.id == models.UserClassroom.user_id)
+        .filter(models.UserClassroom.classroom_id == class_id)
+        .all()
+    )

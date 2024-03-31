@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from models import User, Item, Assignment, Classroom, Role, UserRole, Base
+from models import User, Item, Assignment, Classroom, Role, Base
 from crud import get_password_hash
 
 # Create an engine to connect to the database
@@ -16,6 +16,7 @@ session = Session()
 # Create roles
 roles_data = [
     {"name": "Admin", "slug": "admin"},
+    {"name": "Super teacher", "slug": "super_teacher"},
     {"name": "Teacher", "slug": "teacher"},
     {"name": "Student", "slug": "student"},
 ]
@@ -26,37 +27,40 @@ for role_data in roles_data:
     roles.append(role)
     session.add(role)
 
+# Commit the roles to the database
+session.commit()
+
 # Create users
 users_data = [
     {
         "username": "admin",
         "email": "admin@example.com",
         "hashed_password": f"{get_password_hash('1234')}",
-        "roles": [roles[0]],
+        "role_id": roles[0].id,
     },
     {
         "username": "teacher",
         "email": "teacher@example.com",
         "hashed_password": f"{get_password_hash('1234')}",
-        "roles": [roles[1]],
+        "role_id": roles[1].id,
     },
     {
         "username": "student1",
         "email": "student1@example.com",
         "hashed_password": f"{get_password_hash('1234')}",
-        "roles": [roles[2]],
+        "role_id": roles[3].id,
     },
     {
         "username": "student2",
         "email": "student2@example.com",
         "hashed_password": f"{get_password_hash('1234')}",
-        "roles": [roles[2]],
+        "role_id": roles[3].id,
     },
     {
         "username": "student3",
         "email": "student3@example.com",
         "hashed_password": f"{get_password_hash('1234')}",
-        "roles": [roles[2]],
+        "role_id": roles[3].id,
     },
 ]
 
@@ -92,7 +96,7 @@ session.add(assignment1)
 session.add(assignment2)
 
 # Add students to the classroom
-students = users[1:]
+students = users[2:]  # Exclude admin and teacher
 for student in students:
     classroom.students.append(student)
 
