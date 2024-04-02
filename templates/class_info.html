@@ -65,20 +65,23 @@
             Authorization: `Bearer ${token}`,
           },
         })
-          .then((response) => response.json())
-          .then((data) => {
-            if (data === true) {
+          .then((response) => {
+            if (response.ok) {
               document.getElementById("createAssignmentBtn").style.display =
                 "inline-block";
               document.getElementById("enrollBtn").style.display =
                 "inline-block";
               document.getElementById("dynamicLink2").style.display =
                 "inline-block";
+              document.getElementById("dynamicLink").style.display =
+                "none";
             } else {
               document.getElementById("createAssignmentBtn").style.display =
                 "none";
               document.getElementById("enrollBtn").style.display = "none";
               document.getElementById("dynamicLink2").style.display = "none";
+              document.getElementById("dynamicLink2").style.display =
+                "inline-block";
             }
           })
           .catch((error) => {

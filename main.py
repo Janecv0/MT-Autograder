@@ -368,14 +368,18 @@ def is_teacher_or_higher(
     Returns:
         str: The role of the current authenticated user.
     """
-    return crud.is_teacher_plus(db, current_user.id)
+    query = crud.is_teacher_plus(db, current_user.id)
+    if query:
+        return HTMLResponse(status_code=200, content="You are a super teacher")
+    else:
+        return HTMLResponse(status_code=403, content="You are not a super teacher or higher")
 
 
 @app.get("/users/superteacherplus/")
 def is_superteacher_or_higher(
     current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
     db: Session = Depends(get_db),
-):
+)-> bool:
     """
     Get the role of the current authenticated user.
 
@@ -386,9 +390,15 @@ def is_superteacher_or_higher(
     Returns:
         str: The role of the current authenticated user.
     """
-    return crud.is_admin(db, current_user.id) or crud.is_super_teacher(
+    query = crud.is_admin(db, current_user.id) or crud.is_super_teacher(
         db, current_user.id
     )
+    if query:
+        return HTMLResponse(status_code=200, content="You are a super teacher")
+    else:
+        return HTMLResponse(status_code=403, content="You are not a super teacher or higher")
+
+    
     
 @app.get("/users/admin/")
 def is_admin(
@@ -405,7 +415,11 @@ def is_admin(
     Returns:
         str: The role of the current authenticated user.
     """
-    return crud.is_admin(db, current_user.id)
+    query = crud.is_admin(db, current_user.id)
+    if query:
+        return HTMLResponse(status_code=200, content="You are a admin")
+    else:
+        return HTMLResponse(status_code=403, content="You are not a admin")
 
 @app.get("/items/", response_model=list[schemas.Item])
 def read_items(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
@@ -1014,5 +1028,9 @@ async def change_role(request: Request,
                       class_id:int,
                       db: Session = Depends(get_db),):
     users = crud.get_users_in_class(db,class_id)
-    print(users)
-    return templates.TemplateResponse("student_list.html", {"request": request, "users":users})
+    classroom = crud.get_classroom_by_id(db,class_id)
+    return templates.TemplateResponse("student_list.html", {"request": request, "users":users, "class":classroom})
+
+@app.get("/delete_user")
+async def del_user(request: Request):
+    return templates.TemplateResponse("delete_user.html", {"request": request})

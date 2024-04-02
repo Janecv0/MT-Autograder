@@ -75,6 +75,7 @@
         })
         .then((response) => {
           if (response.ok) {
+            console.log(response)
             $("#uploadForm").submit(function (event) {
               event.preventDefault();
               var formData = new FormData($(this)[0]);
@@ -122,7 +123,8 @@
               });
             });
           } else {
-            window.location.href = "/login";
+            alert("Unauthorized access. Must be a super teacher or higher to create a class.");
+            window.location.href = "/me";
           }
         })
         .catch((error) => {

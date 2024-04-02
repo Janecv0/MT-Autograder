@@ -18,7 +18,7 @@
     <div class="container mt-5">
       <div class="row">
         <div class="col-md-6 offset-md-3">
-          <h3 class="mb-4">Create assignment</h3>
+          <h3 class="mb-4">Change role</h3>
           <form id="uploadForm" enctype="multipart/form-data">
             <div class="form-group">
               <label for="nameInput">Email address of user:</label>
@@ -72,88 +72,81 @@
           Accept: "application/json",
           Authorization: `Bearer ${token}`,
         },
-      })
-        .then((response) => {
-          if (response.status === 401) {
-            alert("Unauthorized access. Please login again.");
-            console.error("Unauthorized access. Please login again.");
-            window.location.href = "/login";
-          }
-        })
-        .then((data) => {
-          if (data === true) {
-            $(document).ready(function () {
-              $("#uploadForm").submit(function (event) {
-                event.preventDefault();
+      }).then((response) => {
+        if (response.status === 401) {
+          alert("Unauthorized access. Please login again.");
+          console.error("Unauthorized access. Please login again.");
+          window.location.href = "/login";
+        } else if (response.status === 200) {
+          $(document).ready(function () {
+            $("#uploadForm").submit(function (event) {
+              event.preventDefault();
 
-                // Make sure token is available
-                if (token) {
-                  // Check if still logged in
-                  fetch("http://127.0.0.1:8000/logincheck", {
-                    method: "GET",
-                    headers: {
-                      Accept: "application/json",
-                      Authorization: `Bearer ${token}`,
-                    },
-                  })
-                    .then((response) => {
-                      if (response.status === 401) {
-                        alert("Unauthorized access. Please login again.");
-                        console.error(
-                          "Unauthorized access. Please login again."
+              // Make sure token is available
+              if (token) {
+                // Check if still logged in
+                fetch("http://127.0.0.1:8000/logincheck", {
+                  method: "GET",
+                  headers: {
+                    Accept: "application/json",
+                    Authorization: `Bearer ${token}`,
+                  },
+                })
+                  .then((response) => {
+                    if (response.status === 401) {
+                      alert("Unauthorized access. Please login again.");
+                      console.error("Unauthorized access. Please login again.");
+                      window.location.href = "/login";
+                    } else {
+                      // Get form data
+                      const email = document.getElementById("emailInput").value;
+                      const role = document.getElementById("roleInput").value;
+
+                      if (role == 0) {
+                        alert("Please select a role");
+                        return;
+                      } else if (role == 1) {
+                        alert(
+                          "Be careful! Changing role to Admin will give the user full access to the system. Are you sure you want to proceed?"
                         );
-                        window.location.href = "/login";
-                      } else {
-                        // Get form data
-                        const email =
-                          document.getElementById("emailInput").value;
-                        const role = document.getElementById("roleInput").value;
-
-                        if (role == 0) {
-                          alert("Please select a role");
-                          return;
-                        } else if (role == 1) {
-                          alert(
-                            "Be careful! Changing role to Admin will give the user full access to the system. Are you sure you want to proceed?"
-                          );
-                        }
-
-                        fetch(
-                          `http://127.0.0.1:8000/update_role/?role_id=${role}&email=${email}`,
-                          {
-                            method: "POST",
-                            headers: {
-                              Accept: "application/json",
-                              Authorization: `Bearer ${token}`,
-                              "Content-Type": "application/json",
-                            },
-                          }
-                        )
-                          .then((response) => response.json())
-                          .then((data) => {
-                            console.log(data.message);
-                            alert(data.message);
-                          })
-                          .catch((error) => {
-                            console.error("Error creating item in DB!", error);
-                            alert("Error changing role in DB!");
-                          });
                       }
-                    })
-                    .catch((error) => {
-                      console.error(error);
-                    });
-                } else {
-                  // Redirect to login page if token is not available
-                  window.location.href = "/login";
-                }
-              });
+
+                      fetch(
+                        `http://127.0.0.1:8000/update_role/?role_id=${role}&email=${email}`,
+                        {
+                          method: "POST",
+                          headers: {
+                            Accept: "application/json",
+                            Authorization: `Bearer ${token}`,
+                            "Content-Type": "application/json",
+                          },
+                        }
+                      )
+                        .then((response) => response.json())
+                        .then((data) => {
+                          console.log(data.message);
+                          alert(data.message);
+                        })
+                        .catch((error) => {
+                          console.error("Error creating item in DB!", error);
+                          alert("Error changing role in DB!");
+                        });
+                    }
+                  })
+                  .catch((error) => {
+                    console.error(error);
+                  });
+              } else {
+                // Redirect to login page if token is not available
+                window.location.href = "/login";
+              }
             });
-          }else{
-            alert("You are not authorized to change roles.");
-            window.location.href = "/classes";
-          }
-        });
+          });
+        } else {
+          alert("You are not authorized to change roles.");
+          window.location.href = "/classes";
+        }
+      });
     </script>
   </body>
 </html>

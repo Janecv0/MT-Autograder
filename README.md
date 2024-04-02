@@ -15,8 +15,10 @@ python -m venv venv
 ```
 ### Activate it
 ```
-.\venv\Scripts\activate.bat (for windows cmd)
+.\venv\Scripts\activate.bat 
 ```
+(for windows cmd)
+
 ### Install requirements
 ```
 pip install -r .\req.txt

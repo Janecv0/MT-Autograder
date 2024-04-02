@@ -28,10 +28,16 @@
           <h3 class="mb-4">Create class</h3>
           <form id="uploadForm" enctype="multipart/form-data">
             <div class="form-group mt-2">
-                <label for="exampleFormControlTextarea1" class="form-label">List of students and teachers:</label>
-                <textarea class="form-control" id="studentListInput" placeholder="Enter students and teachers email divided by comma" rows="3"></textarea>
-  
-              </div>
+              <label for="exampleFormControlTextarea1" class="form-label"
+                >List of students and teachers:</label
+              >
+              <textarea
+                class="form-control"
+                id="studentListInput"
+                placeholder="Enter students and teachers email divided by comma"
+                rows="3"
+              ></textarea>
+            </div>
 
             <button type="submit" class="btn btn-primary mt-3">Enroll</button>
           </form>
@@ -50,81 +56,87 @@
         const class_id = urlParts[2]; // Get the first number
         const token = localStorage.getItem("authToken");
         try {
-            fetch("/users/superteacherplus/", {
-                method: "GET",
-                headers: {
-                    Accept: "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-            })
-                .then((response) => response.json())
-                .then((data) => {
-                    if (data === true) {
-                        $("#uploadForm").submit(function (event) {
-                            event.preventDefault();
-                            var formData = new FormData($(this)[0]);
-                            const token = localStorage.getItem("authToken");
+          fetch("/users/superteacherplus/", {
+            method: "GET",
+            headers: {
+              Accept: "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          })
+            .then((response) => {
+              if (response.status === 401) {
+                alert("Unauthorized access. Please login again.");
+                window.location.href = "/login";
+              } else if (response.status === 200) {
+                $("#uploadForm").submit(function (event) {
+                  event.preventDefault();
+                  var formData = new FormData($(this)[0]);
+                  const token = localStorage.getItem("authToken");
 
-                            // Make sure token is available
-                            if (token) {
-                                // Check if still logged in
-                                fetch("http://127.0.0.1:8000/logincheck", {
-                                    method: "GET",
-                                    headers: {
-                                        Accept: "application/json",
-                                        Authorization: `Bearer ${token}`,
-                                    },
-                                })
-                                    .then((response) => {
-                                        if (response.status === 401) {
-                                            alert("Unauthorized access. Please login again.");
-                                            console.error("Unauthorized access. Please login again.");
-                                            window.location.href = "/login";
-                                        }
-                                    })
-                                    .then(() => {
+                  // Make sure token is available
+                  if (token) {
+                    // Check if still logged in
+                    fetch("http://127.0.0.1:8000/logincheck", {
+                      method: "GET",
+                      headers: {
+                        Accept: "application/json",
+                        Authorization: `Bearer ${token}`,
+                      },
+                    })
+                      .then((response) => {
+                        if (response.status === 401) {
+                          alert("Unauthorized access. Please login again.");
+                          console.error(
+                            "Unauthorized access. Please login again."
+                          );
+                          window.location.href = "/login";
+                        }
+                      })
+                      .then(() => {
+                        const email_list =
+                          document.getElementById("studentListInput").value;
 
-                                        const email_list = document.getElementById("studentListInput").value;
-                                        
-                                        fetch(`http://127.0.0.1:8000/class/${class_id}/enroll/?class_id=${class_id}&email_list=${email_list}`, {
-                                            method: "POST",
-                                            headers: {
-                                                Accept: "application/json",
-                                                Authorization: `Bearer ${token}`,
-                                                "Content-Type": "application/json",
-                                            },
-                                            body: JSON.stringify(formData),
-                                        })
-                                            .then((response) => response.json())
-                                            .then((data) => {
-                                  
-                                                alert(data.message);
-                                            })
-                                            .catch((error) => {
-                                                $("#status").html(
-                                                    '<div class="alert alert-danger">Error uploading file!</div>'
-                                                );
-                                            });
-                                    })
-                                    .catch((error) => {
-                                        console.error("Error creating item in DB!", error);
-                                    });
-                            } else {
-                                window.location.href = "/login";
-                            }
-                        });
-                    } else {
-                        // Redirect to login page if token is not available
-                        window.location.href = "/login";
-                    }
-                })
-                .catch((error) => {
-                    console.error("Error:", error);
+                        fetch(
+                          `http://127.0.0.1:8000/class/${class_id}/enroll/?class_id=${class_id}&email_list=${email_list}`,
+                          {
+                            method: "POST",
+                            headers: {
+                              Accept: "application/json",
+                              Authorization: `Bearer ${token}`,
+                              "Content-Type": "application/json",
+                            },
+                            body: JSON.stringify(formData),
+                          }
+                        )
+                          .then((response) => response.json())
+                          .then((data) => {
+                            alert(data.message);
+                          })
+                          .catch((error) => {
+                            $("#status").html(
+                              '<div class="alert alert-danger">Error uploading file!</div>'
+                            );
+                          });
+                      })
+                      .catch((error) => {
+                        console.error("Error creating item in DB!", error);
+                      });
+                  } else {
+                    window.location.href = "/login";
+                  }
                 });
+              } else {
+                // Redirect to login page if token is not available
+                window.location.href = "/login";
+              }
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+            });
         } catch (error) {
-            console.error("Error:", error);
+          console.error("Error:", error);
         }
-    });
+      });
     </script>
 
     <script
