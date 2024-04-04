@@ -16,32 +16,33 @@
   <div class="container mt-5">
     <div class="row">
       <div class="col-md-6 offset-md-3">
-        <h3 class="mb-4">Delete user</h3>
+        <h3 class="mb-4">Delete assignment</h3>
         <form id="uploadForm" enctype="multipart/form-data">
           <div class="form-group">
-            <label for="idInput">Id of user:</label>
+            <label for="idInput">Id of assignment:</label>
             <input
               type="text"
               class="form-control"
               id="idInput"
               name="id"
-              placeholder="Enter id of user who you want to delete">
+              placeholder="Enter id of assignment who you want to delete">
           </div>
-          <button id="findUser" type="button" class="btn btn-primary mt-3">
-            Find user
+          <button id="findAss" type="button" class="btn btn-primary mt-3">
+            Find assignment
           </button>
         </form>
-        <table class="table table-hover table-sm">
+        <table class="table table-hover table-sm  mt-4">
           <thead>
             <tr>
               <th>Id</th>
-              <th>Login</th>
-              <th>Email</th>
+              <th>Name</th>
+              <th>Class id</th>
+              <th>Owner id</th>
             </tr>
           </thead>
-          <tbody id="user"></tbody>
+          <tbody id="assignment"></tbody>
         </table>
-        <button id="delUser" type="button" class="btn btn-primary mt-3">Delete</button>
+        <button id="delAss" type="button" class="btn btn-primary mt-3">Delete</button>
       </div>
     </div>
   </div>
@@ -75,9 +76,9 @@
         window.location.href = "/login";
       } else if (response.status === 200) {
         $(document).ready(function () {
-          $("#findUser").click(function () {
+          $("#findAss").click(function () {
             const ID = $("#idInput").val();
-            fetch(`http://127.0.0.1:8000/users/${ID}`, {
+            fetch(`http://127.0.0.1:8000/assignment/${ID}`, {
               method: "GET",
               headers: {
                 Accept: "application/json",
@@ -85,20 +86,22 @@
               },
             })
             .then((response) => {
+              console.log(response);
               if (response.status === 404) {
-                alert("User not found");
-                return Promise.reject("User not found");
+                alert("Assignment not found");
+                return Promise.reject("Assignment not found");
               }
               return response.json();
             })
             .then((data) => {
               console.log(data);
-              $("#user").empty();
-              $("#user").append(`
+              $("#assignment").empty();
+              $("#assignment").append(`
                 <tr>
                   <td>${data.id}</td>
-                  <td>${data.username}</td>
-                  <td>${data.email}</td>
+                  <td>${data.name}</td>
+                  <td>${data.classroom_id}</td>
+                  <td>${data.owner_id}</td>
                 </tr>
               `);
             })
@@ -107,9 +110,9 @@
             });
           });
 
-          $("#delUser").click(function () {
+          $("#delAss").click(function () {
             const ID = $("#idInput").val();
-            fetch(`http://127.0.0.1:8000/users/${ID}`, {
+            fetch(`http://127.0.0.1:8000/assignment/${ID}`, {
               method: "DELETE",
               headers: {
                 Accept: "application/json",
@@ -118,14 +121,14 @@
             })
             .then((response) => {
               if (response.status === 404) {
-                alert("User not found");
-                return Promise.reject("User not found");
+                alert("Assignment not found");
+                return Promise.reject("Assignment not found");
               }
               return response.json();
             })
             .then((data) => {
               console.log(data);
-              alert("User deleted successfully");
+              alert("Assignment deleted successfully");
             })
             .catch((error) => {
               console.error(error);
@@ -133,8 +136,8 @@
           });
         });
       } else {
-        alert("You are not authorized to delete users.");
-        window.location.href = "/mypage";
+        alert("You are not authorized to delete assignments.");
+        window.location.href = "/classes";
       }
     })
     .catch((error) => {

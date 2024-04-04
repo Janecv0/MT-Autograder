@@ -164,4 +164,6 @@ class Role(Base):
     name = Column(String(80), nullable=False)
     slug = Column(String(80), nullable=False, unique=True)
 
-    users = relationship("User", back_populates="role", passive_deletes=True)  # one to many
+    users = relationship(
+        "User", back_populates="role", passive_deletes=True
+    )  # one to many

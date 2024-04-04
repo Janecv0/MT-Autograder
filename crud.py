@@ -98,7 +98,8 @@ def get_user_role(db: Session, user_id: int):
         db.query(models.Role)
         .join(models.User)
         .filter(models.User.id == user_id)
-        .first().name
+        .first()
+        .name
     )
 
 
@@ -131,7 +132,7 @@ def create_user(db: Session, user: schemas.UserCreate):
         email=user.email,
         hashed_password=hashed_password,
         username=user.username,
-        role_id=4, # default role is student
+        role_id=4,  # default role is student
     )
     db.add(db_user)
     db.commit()
@@ -497,6 +498,7 @@ def get_assignment_by_id(db: Session, assignment_id: int):
     Returns:
         Assignment: The assignment with the specified ID, or None if not found.
     """
+
     return (
         db.query(models.Assignment)
         .filter(models.Assignment.id == assignment_id)
@@ -722,11 +724,21 @@ def get_item_pass(db: Session, user_id: int, ass_id: int):
         return False
 
 
-def get_users_in_class(db:Session, class_id:int):
-    
+def get_users_in_class(db: Session, class_id: int):
     return (
         db.query(models.User)
         .join(models.UserClassroom, models.User.id == models.UserClassroom.user_id)
         .filter(models.UserClassroom.classroom_id == class_id)
         .all()
     )
+
+
+def delete_assignment(db: Session, ass_id: int):
+    db.query(models.Assignment).filter(models.Assignment.id == ass_id).delete()
+    db.commit()
+    return {"message": "Assignment deleted successfully"}
+
+def delete_classroom(db: Session, ass_id: int):
+    db.query(models.Classroom).filter(models.Classroom.id == ass_id).delete()
+    db.commit()
+    return {"message": "Class deleted successfully"}

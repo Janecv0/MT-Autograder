@@ -113,20 +113,6 @@ async def login_for_access_token(
     return schemas.Token(access_token=access_token, token_type="bearer")
 
 
-@app.get("/login", response_class=HTMLResponse)
-def login(request: Request):
-    """
-    Login endpoint to obtain an access token.
-
-    Args:
-        request (Request): The request object.
-
-    Returns:
-        TemplateResponse: The login template.
-    """
-    return templates.TemplateResponse("login.html", {"request": request})
-
-
 @app.get("/users/me")
 async def read_users_me(
     request: Request,
@@ -166,11 +152,6 @@ async def read_own_items(
 """Database operations"""
 
 
-@app.get("/create/user/", response_class=HTMLResponse)
-def create_user(request: Request):
-    return templates.TemplateResponse("create_user.html", {"request": request})
-
-
 @app.post("/create/user/", response_class=HTMLResponse)
 def create_user(
     user: schemas.UserCreate,
@@ -197,7 +178,7 @@ def create_user(
     return templates.TemplateResponse("create_user.html", {"request": request})
 
 
-@app.get("/users/")
+@app.get("/all_users/")
 def read_users(
     current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
     skip: int = 0,
@@ -223,7 +204,7 @@ def read_users(
         return crud.get_users(db, skip=skip, limit=limit)
 
     else:
-        raise HTTPException(status_code=401, detail="You are not a teacher")
+        raise HTTPException(status_code=403, detail="You are not a teacher")
 
 
 @app.get("/users/{user_id}", response_model=schemas.User)
@@ -372,14 +353,16 @@ def is_teacher_or_higher(
     if query:
         return HTMLResponse(status_code=200, content="You are a super teacher")
     else:
-        return HTMLResponse(status_code=403, content="You are not a super teacher or higher")
+        return HTMLResponse(
+            status_code=403, content="You are not a super teacher or higher"
+        )
 
 
 @app.get("/users/superteacherplus/")
 def is_superteacher_or_higher(
     current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
     db: Session = Depends(get_db),
-)-> bool:
+) -> bool:
     """
     Get the role of the current authenticated user.
 
@@ -396,10 +379,11 @@ def is_superteacher_or_higher(
     if query:
         return HTMLResponse(status_code=200, content="You are a super teacher")
     else:
-        return HTMLResponse(status_code=403, content="You are not a super teacher or higher")
+        return HTMLResponse(
+            status_code=403, content="You are not a super teacher or higher"
+        )
 
-    
-    
+
 @app.get("/users/admin/")
 def is_admin(
     current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
@@ -421,6 +405,7 @@ def is_admin(
     else:
         return HTMLResponse(status_code=403, content="You are not a admin")
 
+
 @app.get("/items/", response_model=list[schemas.Item])
 def read_items(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """
@@ -436,53 +421,6 @@ def read_items(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """
     items = crud.get_items(db, skip=skip, limit=limit)
     return items
-
-
-@app.put("/users/me/update/", response_model=schemas.User)
-def update_user(
-    user: schemas.UserCreate,
-    current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
-    db: Session = Depends(get_db),
-):
-    """
-    Update the current authenticated user.
-
-    Args:
-        user (UserCreate): The updated user data.
-        current_user (User): The current authenticated user.
-        db (Session, optional): The database session. Defaults to Depends(get_db).
-
-    Returns:
-        User: The updated user.
-    """
-    user_id = current_user.id
-    return crud.update_user(db=db, user=user, user_id=user_id)
-
-
-@app.delete("/items/{item_id}")
-def delete_item(
-    item_id: int,
-    current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
-    db: Session = Depends(get_db),
-):
-    """
-    Delete an item.
-
-    Args:
-        item_id (int): The ID of the item to delete.
-        current_user (User): The current authenticated user.
-        db (Session, optional): The database session. Defaults to Depends(get_db).
-
-    Returns:
-        str: The result of the deletion.
-
-    Raises:
-        HTTPException: If the current user does not have enough permissions.
-    """
-    db_item = crud.get_item_by_id(db, item_id)
-    if db_item.owner_id != current_user.id:
-        raise HTTPException(status_code=401, detail="Not enough permissions")
-    return crud.delete_item(db=db, item_id=item_id)
 
 
 @app.delete("/users/{user_id}")
@@ -531,7 +469,7 @@ async def update_user_role(
 
     """
     if crud.is_admin(db, current_user.id):
-        crud.change_user_role(db=db, email = email, role_id=role_id)
+        crud.change_user_role(db=db, email=email, role_id=role_id)
         return {"message": "Role updated"}
 
 
@@ -601,45 +539,6 @@ def read_own_assignments(
         List[Assignment]: The list of assignments.
     """
     return crud.get_my_assignments(db=db, user_id=current_user.id)
-
-
-@app.put("/update_assignment/{assignment_id}")
-def update_assignment(
-    assignment_id: int,
-    description: str,
-    github_url: str,
-    filename: str,
-    current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
-    db: Session = Depends(get_db),
-):
-    """
-    Update an assignment with the given assignment ID.
-
-    Args:
-        assignment_id (int): The ID of the assignment to update.
-        description (str): The updated description of the assignment.
-        github_url (str): The GitHub URL of the assignment.
-        filename (str): The updated filename of the assignment.
-        current_user (schemas.User): The current authenticated user.
-        db (Session, optional): The database session. Defaults to Depends(get_db).
-
-    Returns:
-        The updated assignment.
-
-    Raises:
-        HTTPException: If the current user does not have enough permissions to update the assignment.
-    """
-    ass_owner = crud.get_assignment_by_id(db=db, assignment_id=assignment_id).owner_id
-    if current_user.id == ass_owner:
-        return crud.update_assignment(
-            db=db,
-            assignment_id=assignment_id,
-            description=description,
-            github_url=github_url,
-            filename=filename,
-        )
-    else:
-        raise HTTPException(status_code=401, detail="Not enough permissions")
 
 
 """File upload"""
@@ -903,7 +802,8 @@ async def enroll_classroom(
     return JSONResponse(
         status_code=200,
         content=jsonable_encoder(
-            {'message': 'Students enrolled successfully',
+            {
+                "message": "Students enrolled successfully",
                 "enrolled_users": enrolled_users,
                 "new_users": new_users,
                 "incorrect_emails": incorrect_emails,
@@ -919,13 +819,64 @@ async def loginCheck(
     return HTMLResponse(status_code=200, content="You are logged in")
 
 
+@app.get("/assignment/{id}")
+async def get_assignments_by_id(
+    id: int,
+    current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
+    db: Session = Depends(get_db),
+):
+    assignment = crud.get_assignment_by_id(db, id)
+    if assignment is None:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+    else:
+        return assignment
+
+
+@app.delete("/assignment/{id}")
+async def get_assignments_by_id(
+    id: int,
+    current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
+    db: Session = Depends(get_db),
+):
+    if not crud.is_super_teacher_plus(db, current_user.id):
+        raise HTTPException(status_code=401, detail="Not enough permissions")
+    if crud.get_assignment_by_id(db, id) is None:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+    else:
+        return crud.delete_assignment(db=db, ass_id=id)
+
+@app.get("/del_class/{id}")
+async def get_assignments_by_id(
+    id: int,
+    current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
+    db: Session = Depends(get_db),
+):
+    classroom = crud.get_classroom_by_id(db, id)
+    if classroom is None:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+    else:
+        return classroom
+
+
+@app.delete("/del_class/{id}")
+async def get_assignments_by_id(
+    id: int,
+    current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
+    db: Session = Depends(get_db),
+):
+    if not crud.is_super_teacher_plus(db, current_user.id):
+        raise HTTPException(status_code=401, detail="Not enough permissions")
+    if crud.get_classroom_by_id(db, id) is None:
+        raise HTTPException(status_code=404, detail="Class not found")
+    else:
+        return crud.delete_classroom(db=db, ass_id=id)
 """
 HTML endpoints
 """
 
 
 @app.get("/", response_class=HTMLResponse)
-def read_root(request: Request):
+def html_read_root(request: Request):
     """
     Root endpoint to check if the server is running.
     """
@@ -933,7 +884,7 @@ def read_root(request: Request):
 
 
 @app.get("/nav")
-async def nav(request: Request):
+async def html_nav(request: Request):
     """
     Navigation bar endpoint for placeholder purposes.
     """
@@ -941,17 +892,17 @@ async def nav(request: Request):
 
 
 @app.get("/mypage")
-async def my_page(request: Request):
+async def html_my_page(request: Request):
     return templates.TemplateResponse("my_page.html", {"request": request})
 
 
 @app.get("/favicon.ico")
-async def favicon():
+async def html_favicon():
     return FileResponse("./images/favicon.jpg")
 
 
 @app.get("/classes")
-async def get_all_classes(
+async def html_get_all_classes(
     # current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
     request: Request,
     db: Session = Depends(get_db),
@@ -963,7 +914,7 @@ async def get_all_classes(
 
 
 @app.get("/class/{class_id}")
-async def get_class(
+async def html_get_class(
     class_id: int,
     request: Request,
     user_id: int | None = None,
@@ -986,7 +937,7 @@ async def get_class(
 
 
 @app.get("/class/{class_id}/assignment/{assignment_id}")
-async def get_assignment(
+async def html_get_assignment(
     class_id: int,
     assignment_id: int,
     request: Request,
@@ -999,38 +950,69 @@ async def get_assignment(
 
 
 @app.get("/class/{class_id}/create_assignment")
-async def create_assignment(
+async def html_create_assignment(
     request: Request,
 ):
     return templates.TemplateResponse("create_ass.html", {"request": request})
 
 
 @app.get("/me", response_class=HTMLResponse)
-async def read_users_me(request: Request):
+async def html_read_users_me(request: Request):
     return templates.TemplateResponse("me.html", {"request": request})
 
 
 @app.get("/create_classroom", response_class=HTMLResponse)
-async def read_users_me(request: Request):
+async def html_read_users_me(request: Request):
     return templates.TemplateResponse("create_class.html", {"request": request})
 
 
 @app.get("/class/{class_id}/enroll", response_class=HTMLResponse)
-async def read_users_me(request: Request):
+async def html_read_users_me(request: Request):
     return templates.TemplateResponse("enroll.html", {"request": request})
 
+
 @app.get("/changerole")
-async def change_role(request: Request):
+async def html_change_role(request: Request):
     return templates.TemplateResponse("change_role.html", {"request": request})
 
+
 @app.get("/class/{class_id}/enrolled_users/")
-async def change_role(request: Request,
-                      class_id:int,
-                      db: Session = Depends(get_db),):
-    users = crud.get_users_in_class(db,class_id)
-    classroom = crud.get_classroom_by_id(db,class_id)
-    return templates.TemplateResponse("student_list.html", {"request": request, "users":users, "class":classroom})
+async def html_change_role(
+    request: Request,
+    class_id: int,
+    db: Session = Depends(get_db),
+):
+    users = crud.get_users_in_class(db, class_id)
+    classroom = crud.get_classroom_by_id(db, class_id)
+    return templates.TemplateResponse(
+        "student_list.html", {"request": request, "users": users, "class": classroom}
+    )
+
 
 @app.get("/delete_user")
-async def del_user(request: Request):
+async def html_del_user(request: Request):
     return templates.TemplateResponse("delete_user.html", {"request": request})
+
+
+@app.get("/delete_assignment")
+async def html_del_user(request: Request):
+    return templates.TemplateResponse("delete_ass.html", {"request": request})
+
+@app.get("/delete_class")
+async def html_del_user(request: Request):
+    return templates.TemplateResponse("delete_class.html", {"request": request})
+
+
+@app.get("/login", response_class=HTMLResponse)
+def html_login(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request})
+
+
+@app.get("/create/user/", response_class=HTMLResponse)
+def html_create_user(request: Request):
+    return templates.TemplateResponse("create_user.html", {"request": request})
+
+
+@app.get("/users", response_class=HTMLResponse)
+def html_create_user(request: Request):
+    return templates.TemplateResponse("all_users.html", {"request": request})
