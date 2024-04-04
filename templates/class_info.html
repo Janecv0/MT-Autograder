@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Autograder</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+      crossorigin="anonymous"
+    />
+  </head>
+
+  <body>
+    <div id="nav-placeholder"></div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+      $(function () {
+        $("#nav-placeholder").load("/nav");
+      });
+    </script>
+
+    <script>
+      $(document).ready(function () {
+        // Retrieve token from local storage
+        const token = localStorage.getItem("authToken");
+        // Make sure token is available
+        if (token) {
+          // Make a GET request to the API endpoint with the retrieved token
+          fetch("http://127.0.0.1:8000/logincheck", {
+            method: "GET",
+            headers: {
+              Accept: "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }).then((response) => {
+            if (response.status === 401) {
+              alert("Unauthorized access. Please login again.");
+              console.error("Unauthorized access. Please login again.");
+              window.location.href = "/login";
+            }
+            return response.json();
+          });
+        } else {
+          // Redirect to login page if token is not available
+          window.location.href = "/login";
+        }
+      });
+    </script>
+
+    <script>
+      const url = window.location.pathname;
+      const urlParts = url.split("/");
+      const class_id = urlParts[2];
+      const token = localStorage.getItem("authToken");
+
+      // Check if the user is a teacher or higher and display the create assignment button
+      function checkUserRole() {
+        fetch("/users/teacherplus/", {
+          method: "GET",
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              document.getElementById("createAssignmentBtn").style.display =
+                "inline-block";
+              document.getElementById("enrollBtn").style.display =
+                "inline-block";
+              document.getElementById("dynamicLink2").style.display =
+                "inline-block";
+              document.getElementById("dynamicLink").style.display =
+                "none";
+            } else {
+              document.getElementById("createAssignmentBtn").style.display =
+                "none";
+              document.getElementById("enrollBtn").style.display = "none";
+              document.getElementById("dynamicLink2").style.display = "none";
+              document.getElementById("dynamicLink2").style.display =
+                "inline-block";
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function getUserAssignmentStatus() {
+        fetch("/users/me", {
+          method: "GET",
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            const userId = data.id;
+
+            // Dynamically generate the link based on the user_id
+            const link = `/class/${class_id}?user_id=${userId}`;
+            document.getElementById("dynamicLink").href = link;
+          })
+          .catch((error) => {
+            // Handle error if AJAX request fails
+            console.error("Error:", error);
+          });
+      }
+
+      function getEnrolledUsers() {
+        const enrolledUsersLink = `/class/${class_id}/enrolled_users/?class_id=${class_id}`;
+        document.getElementById("dynamicLink2").href = enrolledUsersLink;
+      }
+
+      // Call the function when the page loads
+      window.onload = function () {
+        checkUserRole();
+        getUserAssignmentStatus();
+        getEnrolledUsers();
+      };
+    </script>
+
+    <div class="container w-50">
+      <h1>List of assignments</h1>
+      <a
+        id="createAssignmentBtn"
+        href="/class/{{class_info.id}}/create_assignment"
+        class="btn btn-primary"
+        style="display: none"
+        >Create New Assignment</a
+      >
+
+      <a
+        id="enrollBtn"
+        href="/class/{{class_info.id}}/enroll"
+        class="btn btn-primary"
+        style="display: none"
+        >Enroll to this class</a
+      >
+
+      <a id="dynamicLink2"
+      style="display: none"
+      class="btn btn-primary"
+        >Enrolled users</a
+      >
+      <a id="dynamicLink" class="btn btn-primary">Check status</a>
+
+      <table class="table table-hover table-sm">
+        <thead>
+          <td>Assignment Name</td>
+          <td>Description</td>
+          <td>Github</td>
+          <td>Status</td>
+        </thead>
+        <tbody>
+          {% set ns = namespace(count=0) %} {% for ass in class_info.assignments
+          %}
+          <tr>
+            <td>
+              <a href="{{ class_info.id }}/assignment/{{ ass.id }}"
+                >{{ ass.name }}</a
+              >
+            </td>
+            <td>{{ ass.description }}</td>
+            <td><a href="{{ ass.github_url }}">link</a></td>
+            <td>
+              {% if ass_pass is not none %} {% if ass_pass[ns.count] %}
+              <span class="badge bg-success">Passed</span>
+              {% else %}
+              <span class="badge bg-danger">Failed</span>
+              {% endif %} {% endif %}
+            </td>
+            {% set ns.count = ns.count + 1 %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <script
+      src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
+      integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js"
+      integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy"
+      crossorigin="anonymous"
+    ></script>
+  </body>
+</html>

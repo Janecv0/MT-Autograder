@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Autograder</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+</head>
+<body>
+  <div id="nav-placeholder"></div>
+
+  <div class="container mt-5">
+    <div class="row">
+      <div class="col-md-6 offset-md-3">
+        <h3 class="mb-4">Create assignment</h3>
+        <form id="uploadForm" enctype="multipart/form-data">
+          <div class="form-group">
+            <label for="nameInput">Name:</label>
+            <input type="text" class="form-control" id="nameInput" name="name" placeholder="Enter name of assignment">
+          </div>
+          <div class="form-group mt-2">
+            <label for="descriptionInput">Description:</label>
+            <input type="text" class="form-control" id="descriptionInput" name="description" placeholder="Enter description">
+          </div>
+          <div class="form-group mt-2">
+            <label for="gitInput">Github url:</label>
+            <input type="text" class="form-control" id="gitInput" name="github_url" placeholder="Enter link to github">
+          </div>
+          <div class="form-group mt-2">
+            <label for="fileInput">Choose file:</label>
+            <input type="file" class="form-control" id="fileInput" name="file">
+          </div>
+          <button type="submit" class="btn btn-primary mt-3">Create</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/5.3.3/js/bootstrap.bundle.min.js" integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy" crossorigin="anonymous"></script>
+  <!-- jQuery -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  
+  <script>
+    $(function () {
+      $("#nav-placeholder").load("nav");
+    });
+  </script>
+  
+  <script>
+    $(document).ready(function() {
+      const url = window.location.pathname; // Get the URL path
+      const urlParts = url.split("/"); // Split the path by '/'
+      const class_id = urlParts[2]; // Get the first number
+
+      $("#uploadForm").submit(function(event) {
+        event.preventDefault();
+        var fileData = new FormData($(this)[0]);
+        const token = localStorage.getItem("authToken");
+
+        // Make sure token is available
+        if (token) {
+          // Check if still logged in
+          fetch("http://127.0.0.1:8000/logincheck", {
+              method: "GET",
+              headers: {
+                Accept: "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+            })
+            .then((response) => {
+              if (response.status === 401) {
+                alert("Unauthorized access. Please login again.");
+                console.error("Unauthorized access. Please login again.");
+                window.location.href = "/login";
+              } else {
+                var formData = {
+                  name: $("#nameInput").val(),
+                  description: $("#descriptionInput").val(),
+                  github_url: $("#gitInput").val(),
+                };
+
+                fetch(`http://127.0.0.1:8000/class/${class_id}/assignment/create?class_id=${class_id}`, {
+                    method: "POST",
+                    headers: {
+                      Accept: "application/json",
+                      Authorization: `Bearer ${token}`,
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(formData),
+                  })
+                  .then((response) => response.json())
+                  .then((data) => {
+                    console.log(data.message);
+                    const ass_id = parseInt(data);
+                    // Upload file
+                    fetch(`http://127.0.0.1:8000/uploadfile/assignment/${ass_id}`, {
+                        method: "POST",
+                        headers: {
+                          Accept: "application/json",
+                          Authorization: `Bearer ${token}`,
+                        },
+                        body: fileData,
+                      })
+                      .then((response) => response.json())
+                      .then((data) => {
+                        console.log(data.message);
+                        alert(data.message);
+                        window.location.href = `/class/${class_id}`;
+                      })
+                      .catch((error) => {
+                        $("#status").html('<div class="alert alert-danger">Error uploading file!</div>');
+                      });
+                    return false;
+                  })
+                  .catch((error) => {
+                    console.error("Error creating item in DB!", error);
+                  });
+              }
+            })
+            .catch((error) => {
+              console.error(error);
+            });
+        } else {
+          // Redirect to login page if token is not available
+          window.location.href = "/login";
+        }
+      });
+    });
+  </script>
+</body>
+</html>
