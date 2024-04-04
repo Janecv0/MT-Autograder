@@ -445,7 +445,12 @@ def delete_user(
     """
     if not crud.is_teacher_plus(db, current_user.id):
         raise HTTPException(status_code=401, detail="Not enough permissions")
-    return crud.delete_user(db=db, user_id=user_id)
+    if user_id == current_user.id:
+        raise HTTPException(
+            status_code=400, detail="You cannot delete your own account"
+        )
+    else:
+        return crud.delete_user(db=db, user_id=user_id)
 
 
 @app.post("/update_role/")
