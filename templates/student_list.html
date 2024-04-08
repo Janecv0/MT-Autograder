@@ -47,7 +47,7 @@
         const token = localStorage.getItem("authToken");
         if (token) {
           // Check if still logged in
-          fetch("http://127.0.0.1:8000/logincheck", {
+          fetch("http://127.0.0.1:8000/superteacherplus", {
             method: "GET",
             headers: {
               Accept: "application/json",

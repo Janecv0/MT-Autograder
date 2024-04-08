@@ -37,6 +37,7 @@ class User(Base):
         secondary="user_classroom",
         back_populates="students",
         passive_deletes=True,
+        cascade="all,delete",
     )  # many to many
 
 
@@ -134,7 +135,10 @@ class Classroom(Base):
         "Assignment", back_populates="classroom", passive_deletes=True
     )
     students = relationship(
-        "User", secondary="user_classroom", back_populates="classrooms"
+        "User",
+        secondary="user_classroom",
+        back_populates="classrooms",
+        cascade="all,delete",
     )
 
 

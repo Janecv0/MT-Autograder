@@ -738,6 +738,7 @@ def delete_assignment(db: Session, ass_id: int):
     db.commit()
     return {"message": "Assignment deleted successfully"}
 
+
 def delete_classroom(db: Session, ass_id: int):
     db.query(models.Classroom).filter(models.Classroom.id == ass_id).delete()
     db.commit()
