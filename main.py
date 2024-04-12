@@ -178,11 +178,11 @@ def create_user(
     return templates.TemplateResponse("create_user.html", {"request": request})
 
 
-@app.get("/all_users/")
+@app.get("/all_users")
 def read_users(
     current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
     skip: int = 0,
-    limit: int = 100,
+    limit: int = 1000,
     db: Session = Depends(get_db),
 ):
     """
@@ -200,6 +200,7 @@ def read_users(
     Raises:
         HTTPException: If the current user is not a teacher.
     """
+
     if crud.is_teacher_plus(db, current_user.id):
         return crud.get_users(db, skip=skip, limit=limit)
 
@@ -595,12 +596,15 @@ async def create_upload_file(
     Returns:
         dict: A dictionary containing the message indicating the success of the upload.
     """
-    prefix = f"HW_{ass_id}_{current_user.id}"
+
     if not file:
         return {"message": "No upload file sent"}
     else:
+        folder = "HW"
+        prefix = f"HW_{ass_id}_{current_user.id}"
         file_extension = file.filename.split(".").pop()
         file_name = f"{prefix}.{file_extension}"
+        file_name = os.path.join(folder, file_name)
         with open(file_name, "wb") as f:
             content = await file.read()
             f.write(content)
@@ -624,12 +628,15 @@ async def upload_file_ass(
     Returns:
         dict: A dictionary containing the message indicating the success of the upload.
     """
-    prefix = f"test_HW_{ass_id}"
+    prefix = f"TESTS/test_HW_{ass_id}"
     if not file:
         return {"message": "No upload file sent"}
     else:
+        folder = "HW"
         file_extension = file.filename.split(".").pop()
         file_name = f"{prefix}.{file_extension}"
+        file_name = os.path.join(folder, file_name)
+        os.makedirs(os.path.dirname(file_name), exist_ok=True)
         with open(file_name, "wb") as f:
             content = await file.read()
             f.write(content)
@@ -646,18 +653,27 @@ async def run(
     db: Session = Depends(get_db),
 ):
     resultfunc = run_tests(ass_id, current_user.id)
-    passed = True if resultfunc["mark"] >= 50 else False
-    crud.update_item(
-        db=db,
-        item_id=crud.get_item(db, f"HW_{ass_id}_{current_user.id}").id,
-        tested=True,
-        passed=passed,
-        mark=resultfunc["mark"],
-        pass_point=resultfunc["pass_points"],
-        fail_point=resultfunc["failed_points"],
-    ),
-
-    return {"result": resultfunc}
+    if type(resultfunc["mark"]) == int or float:
+        passed = True if resultfunc["mark"] >= 50 else False
+        crud.update_item(
+            db=db,
+            item_id=crud.get_item(db, f"HW_{ass_id}_{current_user.id}").id,
+            tested=True,
+            passed=passed,
+            mark=resultfunc["mark"],
+            pass_point=resultfunc["pass_points"],
+            fail_point=resultfunc["failed_points"],
+        ),
+        return {"result": resultfunc}
+    else:
+        return {
+            "result": {
+                "mark": 0,
+                "pass_points": 0,
+                "failed_points": 0,
+                "error_message": "Problem with testing",
+            }
+        }
 
 
 """ email sending, class enrolling"""
@@ -779,6 +795,7 @@ async def enroll_classroom(
                             user_id=crud.get_user_by_email(db=db, email=email).id,
                             classroom_id=class_id,
                         )
+
                 else:
                     username = email.split("@")[0]
                     password = auth.get_random_password()
@@ -850,6 +867,7 @@ async def get_assignments_by_id(
     else:
         return crud.delete_assignment(db=db, ass_id=id)
 
+
 @app.get("/del_class/{id}")
 async def get_assignments_by_id(
     id: int,
@@ -875,6 +893,8 @@ async def get_assignments_by_id(
         raise HTTPException(status_code=404, detail="Class not found")
     else:
         return crud.delete_classroom(db=db, ass_id=id)
+
+
 """
 HTML endpoints
 """
@@ -1003,6 +1023,7 @@ async def html_del_user(request: Request):
 async def html_del_user(request: Request):
     return templates.TemplateResponse("delete_ass.html", {"request": request})
 
+
 @app.get("/delete_class")
 async def html_del_user(request: Request):
     return templates.TemplateResponse("delete_class.html", {"request": request})
@@ -1019,5 +1040,5 @@ def html_create_user(request: Request):
 
 
 @app.get("/users", response_class=HTMLResponse)
-def html_create_user(request: Request):
+def html_all_users(request: Request):
     return templates.TemplateResponse("all_users.html", {"request": request})

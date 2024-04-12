@@ -1,5 +1,6 @@
 import subprocess
 import json
+import os
 from subprocess import DEVNULL
 
 
@@ -13,16 +14,17 @@ def run_tests(test_n: int, user: int):
     Returns:
         dict: A dictionary containing the mark, pass points, and failed points.
     """
-
+    folder = "HW"
     json_filename = f"HW_{test_n}_{user}_report.json"
-    hw_filename = f"HW_{test_n}_{user}"
+    json_filename = os.path.join(folder, json_filename)
+    hw_filename = f"HW_{test_n}_{user}.py"
     with open("hw_name.json", "w") as f:
         json.dump({"filename": hw_filename}, f)
 
     subprocess.run(
         [
             "pytest",
-            f"test_HW_{test_n}.py",
+            f"./TESTS/test_HW_{test_n}.py",
             "-q",
             "--json-report",
             f"--json-report-file={json_filename}",
@@ -34,7 +36,9 @@ def run_tests(test_n: int, user: int):
     with open(json_filename) as f:
         report_data = json.load(f)
 
-    return how_did_we_do(report_data["tests"], False)
+    results = how_did_we_do(report_data["tests"], False)
+
+    return results
 
 
 def print_summary(test):
@@ -151,7 +155,3 @@ def how_did_we_do(tests, print_to_terminal: bool):
         "failed_points": fail_points,
         "error_message": error_message,
     }
-
-
-if __name__ == "__main__":
-    print(run_tests(1, "fake"))

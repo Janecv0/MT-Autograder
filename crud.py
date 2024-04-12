@@ -61,7 +61,11 @@ def get_users(db: Session, skip: int = 0, limit: int = 100):
     Returns:
         List[User]: List of users retrieved from the database.
     """
-    return db.query(models.User).offset(skip).limit(limit).all()
+    users = db.query(models.User).offset(skip).limit(limit).all()
+    for user in users:
+        user.roles = get_user_role(db, user.id)
+        user.hashed_password = None
+    return users
 
 
 def get_user_by_role(db: Session, role: str):

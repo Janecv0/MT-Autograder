@@ -75,19 +75,23 @@ You can do ANYTHING YOU WANT, jk. You can change roles of user now, but soon you
 ### Assignment test file
 Each assignment file to test hw must start with this code for importing students code.
  ```
-import importlib
+import importlib.util
 import os
 import json
 
 with open("hw_name.json") as f:
-    hw_name = json.load(f)
+   hw_name = json.load(f)
 
 os.remove("hw_name.json")
 
-try:
-    HW = importlib.import_module(hw_name["filename"])
-except ImportError:
-    print(f"Failed to import module {hw_name}.")
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+package_name = 'HW'
+module_name = hw_name["filename"]
+module_path = os.path.join(parent_dir, package_name, module_name)
+spec = importlib.util.spec_from_file_location("my_module", module_path)
+HW = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(HW)
  ```
 
 Otherwise this test file is regular pytest code with naming convention `test_{whatever}_{number of points(only one int is allowed)}`
