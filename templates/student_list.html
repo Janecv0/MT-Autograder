@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="dark">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -47,7 +47,7 @@
         const token = localStorage.getItem("authToken");
         if (token) {
           // Check if still logged in
-          fetch("http://127.0.0.1:8000/logincheck", {
+          fetch("http://127.0.0.1:8000/superteacherplus", {
             method: "GET",
             headers: {
               Accept: "application/json",
