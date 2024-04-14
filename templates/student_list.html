@@ -30,14 +30,9 @@
           <td>User ID</td>
           <td>Login</td>
           <td>Email</td>
+          <td>Role</td>
         </thead>
-        {%for user in users%}
-        <tr>
-          <td>{{ user.id }}</td>
-          <td>{{ user.username }}</td>
-          <td>{{ user.email }}</td>
-        </tr>
-        {%endfor%}
+        <tbody id="users"></tbody>
       </table>
     </div>
 
@@ -45,9 +40,12 @@
       $(document).ready(function () {
         // Make sure token is available
         const token = localStorage.getItem("authToken");
+        const url = window.location.pathname; // Get the URL path
+        const urlParts = url.split("/"); // Split the path by '/'
+        const class_id = urlParts[2]; // Get the first number
+        let isTeacher = false;
         if (token) {
-          // Check if still logged in
-          fetch("http://127.0.0.1:8000/superteacherplus", {
+          fetch("http://127.0.0.1:8000/users/teacherplus/", {
             method: "GET",
             headers: {
               Accept: "application/json",
@@ -55,13 +53,97 @@
             },
           })
             .then((response) => {
-              if (response.status === 401) {
+              if (response.status !== 200 && response.status !== 403) {
+                alert("Unauthorized access.");
                 window.location.href = "/login";
+              }
+              else if(response.status === 200){
+                isTeacher = true;
+              }
+              return response;
+            })
+            .then((data) => {
+              if (!isTeacher) {
+                window.location.href = "/mypage";
+              }
+              else{
+                fetch(`http://127.0.0.1:8000/class/${class_id}/enrolled_users_list`, {
+                  method: "GET",
+                  headers: {
+                    Accept: "application/json",
+                    Authorization: `Bearer ${token}`,
+                  },
+                })
+                  .then((response) => {
+                    if (response.status !== 200) {
+                      window.location.href = "/mypage";
+                    }
+                    return response.json();
+                  })
+      
+                  .then((data) => {
+                    $("#users").empty();
+                    data.forEach((user) => {
+                      let deleteButton = "";
+                if (user["roles"] === "Admin") {
+                  deleteButton =
+                    '<button class="btn btn-warning" disabled>Remove from class</button>';
+                } else {
+                  deleteButton =
+                    '<button class="btn btn-warning">Remove from class</button>';
+                }
+      
+                      $("#users").append(`
+                          <tr>
+                              <td>${user["id"]}</td>
+                              <td>${user["username"]}</td>
+                              <td>${user["email"]}</td>
+                              <td>${user["roles"]}</td>
+                              <td>
+                                  ${deleteButton}
+                              </td>
+                          </tr>
+                      `);
+                    });
+                  })
+                  .catch((error) => {
+                    console.error(error);
+                  });
               }
             })
             .catch((error) => {
               console.error(error);
             });
+
+            $("#users").on("click", ".btn-warning", function () {
+              let studentId = $(this).closest("tr").children("td:first").text();
+  
+              // Confirmation dialog
+              let confirmation = window.confirm(
+                "Are you sure you want to remove this user from this class?"
+              );
+  
+              if (confirmation) {
+                fetch(`http://127.0.0.1:8000/class/${class_id}/removeuser/${studentId}`, {
+                  method: "DELETE",
+                  headers: {
+                    Accept: "application/json",
+                    Authorization: `Bearer ${token}`,
+                  },
+                })
+                  .then((response) => response.json())
+                  .then((data) => {
+                    alert("User removed from class successfully");
+                    $(this).closest("tr").remove();
+                  })
+                  .catch((error) => {
+                    console.error("Error removing user");
+                  });
+              } else {
+                console.log("Remove cancelled by user.");
+              }
+            });
+
         } else {
           // Redirect to login page if token is not available
           window.location.href = "/login";

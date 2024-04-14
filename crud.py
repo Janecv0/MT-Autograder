@@ -7,6 +7,12 @@ from passlib.context import CryptContext
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
+def add_role_hide_password(db: Session, user):
+    user.roles = get_user_role(db, user.id)
+    user.hashed_password = None
+    return user
+
+
 def get_user(db: Session, user_id: int):
     """
     Return the user with the given user_id
@@ -18,7 +24,9 @@ def get_user(db: Session, user_id: int):
     Returns:
         User: The user with the specified ID, or None if not found.
     """
-    return db.query(models.User).filter(models.User.id == user_id).first()
+    return add_role_hide_password(
+        db, db.query(models.User).filter(models.User.id == user_id).first()
+    )
 
 
 def get_user_by_username(db: Session, username: str):
@@ -63,8 +71,7 @@ def get_users(db: Session, skip: int = 0, limit: int = 100):
     """
     users = db.query(models.User).offset(skip).limit(limit).all()
     for user in users:
-        user.roles = get_user_role(db, user.id)
-        user.hashed_password = None
+        user = add_role_hide_password(db, user)
     return users
 
 
@@ -729,12 +736,15 @@ def get_item_pass(db: Session, user_id: int, ass_id: int):
 
 
 def get_users_in_class(db: Session, class_id: int):
-    return (
+    users = (
         db.query(models.User)
         .join(models.UserClassroom, models.User.id == models.UserClassroom.user_id)
         .filter(models.UserClassroom.classroom_id == class_id)
         .all()
     )
+    for user in users:
+        user = add_role_hide_password(db, user)
+    return users
 
 
 def delete_assignment(db: Session, ass_id: int):
@@ -747,3 +757,11 @@ def delete_classroom(db: Session, ass_id: int):
     db.query(models.Classroom).filter(models.Classroom.id == ass_id).delete()
     db.commit()
     return {"message": "Class deleted successfully"}
+
+
+def pop_user_from_class(db: Session, user_id: int, class_id: int):
+    db.query(models.UserClassroom).filter(
+        models.UserClassroom.user_id == user_id
+    ).filter(models.UserClassroom.classroom_id == class_id).delete()
+    db.commit()
+    return {"message": "User removed successfully"}
