@@ -75,12 +75,16 @@
                 "inline-block";
               document.getElementById("dynamicLink").style.display =
                 "none";
+              document.getElementById("forStudents").style.display =
+                "none";
             } else {
               document.getElementById("createAssignmentBtn").style.display =
                 "none";
               document.getElementById("enrollBtn").style.display = "none";
               document.getElementById("dynamicLink2").style.display = "none";
               document.getElementById("dynamicLink2").style.display =
+                "inline-block";
+                document.getElementById("forStudents").style.display =
                 "inline-block";
             }
           })
@@ -154,7 +158,7 @@
           <td>Assignment Name</td>
           <td>Description</td>
           <td>Github</td>
-          <td>Status</td>
+          <td id="forStudents">Status</td>
         </thead>
         <tbody>
           {% set ns = namespace(count=0) %} {% for ass in class_info.assignments

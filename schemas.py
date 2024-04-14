@@ -74,6 +74,7 @@ class User(UserBase):
     items: list[Item] = []
     roles: list[RoleBase] = []
     own_assignments: list | None
+    is_first_login: bool | None = True
 
     class Config:
         """

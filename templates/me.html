@@ -39,6 +39,9 @@
               <p id="error" class="text-danger"></p>
             </div>
           </div>
+          <div class="mt-3"></div>
+            <a href="/change_password" class="btn btn-primary">Change Password</a>
+          </div>
         </div>
       </div>
     </div>
@@ -83,7 +86,6 @@
                 })
                   .then((response) => response.json())
                   .then((data) => {
-                    console.log(data);
                     $("#role").text(data);
                   }); // Add a closing parenthesis and semicolon here
               })

@@ -765,3 +765,24 @@ def pop_user_from_class(db: Session, user_id: int, class_id: int):
     ).filter(models.UserClassroom.classroom_id == class_id).delete()
     db.commit()
     return {"message": "User removed successfully"}
+
+
+def update_user_password(db: Session, user_id: int, new_password: str):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    user.hashed_password = get_password_hash(new_password)
+    db.commit()
+    db.refresh(user)
+    return {"message": "Password changed successfully!"}
+
+
+def is_first_login(db: Session, user_id: int):
+    return (
+        db.query(models.User).filter(models.User.id == user_id).first().is_first_login
+    )
+
+
+def first_password_changed(db: Session, user_id: int):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    user.is_first_login = False
+    db.commit()
+    return {"message": "First login password changed successfully!"}

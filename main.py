@@ -893,33 +893,33 @@ async def get_assignments_by_id(
         raise HTTPException(status_code=404, detail="Class not found")
     else:
         return crud.delete_classroom(db=db, ass_id=id)
-    
-    
+
+
 @app.get("/class/{id}/enrolled_users_list")
 async def get_enrolled_users_list(
     id: int,
     current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
     db: Session = Depends(get_db),
 ):
-    enrolled_users = crud.get_users_in_class(db,id)
+    enrolled_users = crud.get_users_in_class(db, id)
     if crud.is_teacher_plus(db, current_user.id):
         return enrolled_users
-    
+
     else:
         redacted_list = []
         for user in enrolled_users:
             if user.id != current_user.id:
                 user = None
-                
+
             redacted_list.append(user)
 
         return redacted_list
-    
-    
+
+
 @app.delete("/class/{class_id}/removeuser/{user_id}")
 async def remove_user_from_class(
     class_id: int,
-    user_id:int,
+    user_id: int,
     current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
     db: Session = Depends(get_db),
 ):
@@ -927,7 +927,46 @@ async def remove_user_from_class(
         return crud.pop_user_from_class(db, user_id, class_id)
     else:
         HTMLResponse(status_code=401, content="You are not a teacher")
-    
+
+
+@app.post("/change_password")
+async def change_password(
+    new_password: str,
+    old_password: str,
+    current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
+    db: Session = Depends(get_db),
+):
+    if auth.verify_password(old_password, current_user.hashed_password):
+        if crud.update_user_password(db, current_user.id, new_password):
+            return HTMLResponse(status_code=200, content="Password changed")
+        else:
+            return HTMLResponse(status_code=500, content="Password not changed")
+
+
+@app.post("/change_password_first")
+async def change_password(
+    new_password: str,
+    current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
+    db: Session = Depends(get_db),
+):
+    if crud.is_first_login(db, current_user.id):
+        if crud.update_user_password(db, current_user.id, new_password):
+            crud.first_password_changed(db, current_user.id)
+            return HTMLResponse(status_code=200, content="Password changed")
+        else:
+            return HTMLResponse(status_code=500, content="Password not changed")
+
+
+@app.get("/login/is_first")
+async def is_first_login(
+    current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
+    db: Session = Depends(get_db),
+):
+    if crud.is_first_login(db, current_user.id):
+        return HTMLResponse(status_code=202, content="First login")
+    else:
+        return HTMLResponse(status_code=200, content="Not first login")
+
 
 """
 HTML endpoints
@@ -1076,3 +1115,15 @@ def html_create_user(request: Request):
 @app.get("/users", response_class=HTMLResponse)
 def html_all_users(request: Request):
     return templates.TemplateResponse("all_users.html", {"request": request})
+
+
+@app.get("/change_password")
+def html_change_password(request: Request):
+    return templates.TemplateResponse("change_password.html", {"request": request})
+
+
+@app.get("/change_password_first")
+def html_change_password(request: Request):
+    return templates.TemplateResponse(
+        "change_password_first.html", {"request": request}
+    )

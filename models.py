@@ -39,6 +39,7 @@ class User(Base):
         passive_deletes=True,
         cascade="all,delete",
     )  # many to many
+    is_first_login = Column(Boolean, default=True)
 
 
 class Item(Base):

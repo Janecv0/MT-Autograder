@@ -89,12 +89,26 @@
             if (response.ok) {
               const data = await response.json();
               const token = data.access_token;
-              console.log("Token:", token);
               localStorage.setItem("authToken", token);
               updateButtonVisibility();
               // Redirect or perform any other action upon successful login
               alert("Login successful!");
-              window.location.href = "/mypage";
+
+              fetch("/login/is_first", {
+                method: "GET",
+                headers: {
+                  Accept: "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+              })
+              .then((response) => {
+                if (response.status === 202) {
+                  window.location.href = "/change_password_first";
+                } else {
+                  window.location.href = "/mypage";
+                }
+              });
+
             } else {
               console.error("Login failed");
               alert(
