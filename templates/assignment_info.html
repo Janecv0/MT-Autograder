@@ -22,10 +22,54 @@
       });
     </script>
 
+    <script>
+      const url = window.location.pathname;
+      const urlParts = url.split("/");
+      const class_id = urlParts[2];
+      const ass_id = urlParts[4];
+      const token = localStorage.getItem("authToken");
+
+      // Check if the user is a teacher or higher and display the create assignment button
+      function checkUserRole() {
+        fetch("/users/teacherplus/", {
+          method: "GET",
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              document.getElementById("delAssignmentBtn").style.display =
+                "inline-block";
+            } else {
+              document.getElementById("delAssignmentBtn").style.display =
+                "none";
+            }
+
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+      // Call the function when the page loads
+      window.onload = function () {
+        checkUserRole();
+      };
+    </script>
+
+
     <div class="container mt-5">
       <div class="row">
         <div class="col-md-6 offset-md-3">
           <h3 class="mb-4">Upload your solution</h3>
+
+            <a
+              id="delAssignmentBtn"
+              class="btn btn-danger mt-3"
+              style="display: none"
+              >Delete assignment</a>
+
           <form id="uploadForm" enctype="multipart/form-data">
             <div class="form-group">
               <label for="descriptionInput">Description:</label>
@@ -199,6 +243,28 @@
               console.error(error);
             });
         });
+
+        document.getElementById("delAssignmentBtn").addEventListener("click", function() {
+          fetch(`/assignment/${ass_id}`, {
+            method: "DELETE",
+            headers: {
+              Accept: "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          })
+          .then((response) => {
+            if (response.ok) {
+              alert("Assignment deleted successfully");
+              window.location.href =`/class/${class_id}`;
+            } else {
+              alert("Error deleting assignment");
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+        });
+
       });
     </script>
 
