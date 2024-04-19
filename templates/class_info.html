@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="dark">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -129,7 +129,8 @@
     </script>
 
     <div class="container w-50">
-      <h1>List of assignments</h1>
+      <h1 class="mt-3">{{ class_info.description }}</h1>
+      <h3 class="mt-3">List of assignments</h3>
       <a
         id="createAssignmentBtn"
         href="/class/{{class_info.id}}/create_assignment"

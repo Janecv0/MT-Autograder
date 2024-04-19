@@ -39,14 +39,14 @@ users_data = [
         "role_id": roles[0].id,
     },
     {
-        "username": "teacher",
-        "email": "teacher@example.com",
+        "username": "ucitel",
+        "email": "nejucitel@email.cz",
         "hashed_password": f"{get_password_hash('1234')}",
         "role_id": roles[1].id,
     },
     {
-        "username": "student1",
-        "email": "student1@example.com",
+        "username": "janecvoj",
+        "email": "vojtech.janecek@fs.cvut.cz",
         "hashed_password": f"{get_password_hash('1234')}",
         "role_id": roles[3].id,
     },
@@ -73,21 +73,21 @@ for user_data in users_data:
 # Create teacher's classroom
 teacher = users[1]
 classroom = Classroom(
-    name="Math Class", description="Mathematics Classroom", year=2024, owner=teacher
+    name="S232-OOP", description="Objektově orientované programování", year=2024, owner=teacher
 )
 session.add(classroom)
 
 # Create assignments for the classroom
 assignment1 = Assignment(
     filename="test_HW_1",
-    description="First Assignment",
+    description="print('Hello World!')",
     owner=teacher,
     classroom=classroom,
-    name="Assignment1",
+    name="Hello World!",
 )
 assignment2 = Assignment(
-    name="Assignment2",
-    description="Second Assignment",
+    name="FizzBuzz",
+    description="FizzBuzz implementace v Pythonu.",
     owner=teacher,
     classroom=classroom,
     filename="test_HW_2",

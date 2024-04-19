@@ -600,11 +600,10 @@ async def create_upload_file(
     if not file:
         return {"message": "No upload file sent"}
     else:
-        folder = "HW"
         prefix = f"HW_{ass_id}_{current_user.id}"
         file_extension = file.filename.split(".").pop()
         file_name = f"{prefix}.{file_extension}"
-        file_name = os.path.join(folder, file_name)
+        print(file_name)
         with open(file_name, "wb") as f:
             content = await file.read()
             f.write(content)
