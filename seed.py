@@ -72,24 +72,40 @@ for user_data in users_data:
 
 # Create teacher's classroom
 teacher = users[1]
-classroom = Classroom(
+
+classrooms =[ Classroom(
     name="S232-OOP", description="Objektově orientované programování", year=2024, owner=teacher
-)
-session.add(classroom)
+),
+    Classroom(
+        name="S232-AI", description="Umělá inteligence a neuronové sítě", year=2024, owner=teacher
+    ),
+    Classroom(
+        name="S232-SVAO", description="Strojové vnímání a analýza obrazu", year=2024, owner=teacher
+    ),
+    Classroom(
+        name="S232-PIS", description="Projektování informačních systémů", year=2024, owner=teacher
+    ),
+    
+    Classroom(
+        name="S232-OPSR", description="Optimální a prediktivní systémy řízení", year=2024, owner=teacher
+    ),
+]
+for classroom in classrooms:
+    session.add(classroom)
 
 # Create assignments for the classroom
 assignment1 = Assignment(
     filename="test_HW_1",
     description="print('Hello World!')",
     owner=teacher,
-    classroom=classroom,
+    classroom=classrooms[0],
     name="Hello World!",
 )
 assignment2 = Assignment(
     name="FizzBuzz",
     description="FizzBuzz implementace v Pythonu.",
     owner=teacher,
-    classroom=classroom,
+    classroom=classrooms[0],
     filename="test_HW_2",
 )
 session.add(assignment1)
