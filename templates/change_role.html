@@ -189,31 +189,33 @@
                         alert("Please select a role");
                         return;
                       } else if (role == 1) {
-                        alert(
-                          "Be careful! Changing role to Admin will give the user full access to the system. Are you sure you want to proceed?"
-                        );
-                      }
-
-                      fetch(
-                        `http://127.0.0.1:8000/update_role/?role_id=${role}&email=${email}`,
-                        {
-                          method: "POST",
-                          headers: {
-                            Accept: "application/json",
-                            Authorization: `Bearer ${token}`,
-                            "Content-Type": "application/json",
-                          },
+                        let text = "Be careful! Changing role to Admin will give the user full access to the system. Are you sure you want to proceed?";
+                        if (confirm(text) == true) {
+                        
+                          fetch(
+                            `http://127.0.0.1:8000/update_role/?role_id=${role}&email=${email}`,
+                            {
+                              method: "POST",
+                              headers: {
+                                Accept: "application/json",
+                                Authorization: `Bearer ${token}`,
+                                "Content-Type": "application/json",
+                              },
+                            }
+                          )
+                            .then((response) => response.json())
+                            .then((data) => {
+                              console.log(data.message);
+                              alert(data.message);
+                            })
+                            .catch((error) => {
+                              console.error("Error creating item in DB!", error);
+                              alert("Error changing role in DB!");
+                            });
+                        } else {
+                          alert("Role change cancelled.");
                         }
-                      )
-                        .then((response) => response.json())
-                        .then((data) => {
-                          console.log(data.message);
-                          alert(data.message);
-                        })
-                        .catch((error) => {
-                          console.error("Error creating item in DB!", error);
-                          alert("Error changing role in DB!");
-                        });
+                      }
                     }
                   })
                   .catch((error) => {
