@@ -129,7 +129,7 @@
         const class_id = urlParts[2]; // Get the first number
         let isTeacher = false;
         if (token) {
-          fetch("http://127.0.0.1:8000/users/teacherplus/", {
+          fetch("/users/teacherplus/", {
             method: "GET",
             headers: {
               Accept: "application/json",
@@ -151,7 +151,7 @@
                 window.location.href = "/mypage";
               }
               else{
-                fetch(`http://127.0.0.1:8000/class/${class_id}/enrolled_users_list`, {
+                fetch(`/class/${class_id}/enrolled_users_list`, {
                   method: "GET",
                   headers: {
                     Accept: "application/json",
@@ -208,7 +208,7 @@
               );
   
               if (confirmation) {
-                fetch(`http://127.0.0.1:8000/class/${class_id}/removeuser/${studentId}`, {
+                fetch(`/class/${class_id}/removeuser/${studentId}`, {
                   method: "DELETE",
                   headers: {
                     Accept: "application/json",

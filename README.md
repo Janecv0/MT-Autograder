@@ -7,6 +7,9 @@ Are you bored of marking students python homeworks? If your answer is yes this w
 > [!IMPORTANT]
 > This code is written for python 3.10.+
 
+### Install docker
+For testing docker is needed. [You can get it here](https://docs.docker.com/get-docker/).
+
 ### Clone repo
 After copying or downloading this repo get into develop_api branch.
 ### Create virtual environment
@@ -70,28 +73,12 @@ Role: Super teacher
 You can under Admin dropdown menu create new class. Otherwise same as Teacher
 
 Role: Admin
-You can do ANYTHING YOU WANT, jk. You can change roles of user now, but soon you will be able to pop them from DB.
+You can do ANYTHING YOU WANT, jk. You can change roles of user or pop them from DB.
 
 ### Assignment test file
 Each assignment file to test hw must start with this code for importing students code.
  ```
-import importlib.util
-import os
-import json
-
-with open("hw_name.json") as f:
-   hw_name = json.load(f)
-
-os.remove("hw_name.json")
-
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(current_dir)
-package_name = 'HW'
-module_name = hw_name["filename"]
-module_path = os.path.join(parent_dir, package_name, module_name)
-spec = importlib.util.spec_from_file_location("my_module", module_path)
-HW = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(HW)
+from HW import __name_of_function_
  ```
 
 Otherwise this test file is regular pytest code with naming convention `test_{whatever}_{number of points(only one int is allowed)}`
@@ -104,6 +91,8 @@ Otherwise this test file is regular pytest code with naming convention `test_{wh
 >```
 >Where `test` is pytest prefix, `1` is name of test, `5` is number of points for passing it. 
 
+### See student results
+As teacher you can see results of students with press of button in assignment info, you can also see their code.
 
 
 

@@ -225,7 +225,7 @@ def get_user_item(db: Session, user_id: int):
     Returns:
         Item: The item owned by the user, or None if not found.
     """
-    return db.query(models.Item).filter(models.Item.owner_id == user_id).first()
+    return db.query(models.Item).filter(models.Item.owner_id == user_id).all()
 
 
 def create_user_item(
@@ -786,3 +786,12 @@ def first_password_changed(db: Session, user_id: int):
     user.is_first_login = False
     db.commit()
     return {"message": "First login password changed successfully!"}
+
+
+def get_item_by_user_assignment(db: Session, user_id: int, assignment_id: int):
+    return (
+        db.query(models.Item)
+        .filter(models.Item.owner_id == user_id)
+        .filter(models.Item.assignment_id == assignment_id)
+        .first()
+    )

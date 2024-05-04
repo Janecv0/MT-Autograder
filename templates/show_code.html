@@ -105,107 +105,56 @@
       });
     </script>
 
-    <div class="container w-50">
-      <h1>List of users in database</h1>
 
-      <table class="table table-hover table-sm">
-        <thead>
-          <td>User ID</td>
-          <td>Login</td>
-          <td>Email</td>
-          <td>Role</td>
-          <td>Action</td>
-        </thead>
-        <tbody id="users"></tbody>
-      </table>
+    <div class="container mt-3">
+        <div class="row">
+            <div class="col">
+                <h1>Code</h1>
+            </div>
+        </div>
+
+    <div class="container mt-3">
+        <div class="row">
+            <div class="col">
+                <pre><code>{{ code }}</code></pre>
+            </div>
+        </div>
     </div>
 
     <script>
-      $(document).ready(function () {
-        // Make sure token is available
-        const token = localStorage.getItem("authToken");
-        if (token) {
-          // Check if still logged in
-          fetch(`/all_users`, {
-            method: "GET",
-            headers: {
-              Accept: "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          })
+        $(document).ready(function () {
+          // Make sure token is available
+          const token = localStorage.getItem("authToken");
+          if (token) {
+            // Check if still logged in
+            fetch("/users/teacherplus/", {
+              method: "GET",
+              headers: {
+                Accept: "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+            })
             .then((response) => {
-              if (response.status === 401) {
-                // Redirect to login page if token is not valid
-                window.location.href = "/login";
-              } else if (response.status === 403) {
-                alert("Unauthorized access.");
-                window.location.href = "/mypage";
+              if (response.ok) {
+                  
+                  }
+              else{
+                  alert("You are not authorized to view this page.");
+                  window.location.href = "/mypage";
               }
-              return response.json();
-            })
-            .then((data) => {
-              $("#users").empty();
-              data.forEach((user) => {
-                let deleteButton = "";
-                if (user["roles"] === "Admin") {
-                  deleteButton =
-                    '<button class="btn btn-danger" disabled>Delete</button>';
-                } else {
-                  deleteButton =
-                    '<button class="btn btn-danger">Delete</button>';
+              if (response.status === 401) {
+                  window.location.href = "/login";
                 }
-
-                $("#users").append(`
-                    <tr>
-                        <td>${user["id"]}</td>
-                        <td>${user["username"]}</td>
-                        <td>${user["email"]}</td>
-                        <td>${user["roles"]}</td>
-                        <td>
-                            ${deleteButton}
-                        </td>
-                    </tr>
-                `);
-              });
-            })
-            .catch((error) => {
-              console.error(error);
-            });
-
-          $("#users").on("click", ".btn-danger", function () {
-            let studentId = $(this).closest("tr").children("td:first").text();
-
-            // Confirmation dialog
-            let confirmation = window.confirm(
-              "Are you sure you want to delete this record?"
-            );
-
-            if (confirmation) {
-              fetch(`/users/${studentId}`, {
-                method: "DELETE",
-                headers: {
-                  Accept: "application/json",
-                  Authorization: `Bearer ${token}`,
-                },
               })
-                .then((response) => response.json())
-                .then((data) => {
-                  alert("User deleted successfully");
-                  $(this).closest("tr").remove();
-                })
-                .catch((error) => {
-                  console.error("Error deleting user");
-                });
-            } else {
-              console.log("Deletion cancelled by user.");
-            }
-          });
-        } else {
-          // Redirect to login page if token is not available
-          window.location.href = "/login";
-        }
-      });
-    </script>
+              .catch((error) => {
+                console.error(error);
+              });
+          } else {
+            // Redirect to login page if token is not available
+            window.location.href = "/login";
+          }
+        });
+      </script>
 
     <script
       src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"

@@ -162,7 +162,7 @@
         $(document).ready(function () {
           $("#findAss").click(function () {
             const ID = $("#idInput").val();
-            fetch(`http://127.0.0.1:8000/assignment/${ID}`, {
+            fetch(`/assignment/${ID}`, {
               method: "GET",
               headers: {
                 Accept: "application/json",
@@ -196,7 +196,7 @@
 
           $("#delAss").click(function () {
             const ID = $("#idInput").val();
-            fetch(`http://127.0.0.1:8000/assignment/${ID}`, {
+            fetch(`/assignment/${ID}`, {
               method: "DELETE",
               headers: {
                 Accept: "application/json",

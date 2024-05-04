@@ -125,8 +125,12 @@
             if (response.ok) {
               document.getElementById("delAssignmentBtn").style.display =
                 "inline-block";
+              document.getElementById("showOutcomeBtn").style.display =
+                "inline-block";
             } else {
               document.getElementById("delAssignmentBtn").style.display =
+                "none";
+              document.getElementById("showOutcomeBtn").style.display =
                 "none";
             }
 
@@ -152,6 +156,13 @@
               class="btn btn-danger mt-3"
               style="display: none"
               >Delete assignment</a>
+
+
+              <a
+              id="showOutcomeBtn"
+              class="btn btn-primary mt-3"
+              style="display: none"
+              >Show results</a>
 
           <form id="uploadForm" enctype="multipart/form-data">
             <div class="form-group">
@@ -212,7 +223,7 @@
         const token = localStorage.getItem("authToken");
         if (token) {
           // Check if still logged in
-          fetch("http://127.0.0.1:8000/logincheck", {
+          fetch("/logincheck", {
             method: "GET",
             headers: {
               Accept: "application/json",
@@ -244,7 +255,7 @@
           var fileData = new FormData($(this)[0]);
 
           // Create item in DB
-          fetch("http://127.0.0.1:8000/users/me", {
+          fetch("/users/me", {
             method: "GET",
             headers: {
               Accept: "application/json",
@@ -260,7 +271,7 @@
                 description: description,
               };
               fetch(
-                `http://127.0.0.1:8000/create_item?ass_id=${ass_id}`,
+                `/create_item?ass_id=${ass_id}`,
                 {
                   method: "POST",
                   headers: {
@@ -284,7 +295,7 @@
             });
 
           // Upload file
-          fetch(`http://127.0.0.1:8000/uploadfile/${ass_id}`, {
+          fetch(`/uploadfile/${ass_id}`, {
             method: "POST",
             headers: {
               Accept: "application/json",
@@ -313,7 +324,7 @@
           document.getElementById("spinner").style.display =
               "inline-block";
 
-          fetch(`http://127.0.0.1:8000/test/${ass_id}`, {
+          fetch(`/test/${ass_id}`, {
             method: "POST",
             headers: {
               Accept: "application/json",
@@ -365,6 +376,10 @@
           .catch((error) => {
             console.error("Error:", error);
           });
+        });
+
+        document.getElementById("showOutcomeBtn").addEventListener("click", function() {
+          window.location.href = `/class/${class_id}/assignment/${ass_id}/results`;
         });
 
       });

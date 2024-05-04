@@ -168,7 +168,7 @@
               // Make sure token is available
               if (token) {
                 // Check if still logged in
-                fetch("http://127.0.0.1:8000/logincheck", {
+                fetch("/logincheck", {
                   method: "GET",
                   headers: {
                     Accept: "application/json",
@@ -193,7 +193,7 @@
                         if (confirm(text) == true) {
                         
                           fetch(
-                            `http://127.0.0.1:8000/update_role/?role_id=${role}&email=${email}`,
+                            `/update_role/?role_id=${role}&email=${email}`,
                             {
                               method: "POST",
                               headers: {

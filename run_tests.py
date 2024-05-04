@@ -5,7 +5,6 @@ import os
 import docker
 
 
-
 def run_tests(test_n: int, user: int):
     """Run the tests and return the grade and the points.
 
@@ -23,11 +22,13 @@ def run_tests(test_n: int, user: int):
     hw_filename_with_path = os.path.join(HW_folder, hw_filename)
     test_filename = f"test_HW_{test_n}.py"
     test_filename_with_path = os.path.join("TESTS", test_filename)
-    
-    create_and_run_container(test_filename_with_path, hw_filename_with_path, json_filename, [])
-    
+
+    create_and_run_container(
+        test_filename_with_path, hw_filename_with_path, json_filename, []
+    )
+
     os.replace(json_filename, json_filename_with_path)
-    
+
     with open(json_filename_with_path) as f:
         report_data = json.load(f)
 
@@ -151,7 +152,10 @@ def how_did_we_do(tests, print_to_terminal: bool):
         "error_message": error_message,
     }
 
-def create_and_run_container(test_file: str, HW_file: str, json_filename: str, packages_to_install: list):
+
+def create_and_run_container(
+    test_file: str, HW_file: str, json_filename: str, packages_to_install: list
+):
     """Create a Docker container and run the tests inside it.
 
     Args:
@@ -161,10 +165,10 @@ def create_and_run_container(test_file: str, HW_file: str, json_filename: str, p
         packages_to_install (list): list of packages to install
     """
     client = docker.from_env()
-    
+
     # Define the base Docker image
     base_image = "python:latest"
-    
+
     # Create a new rootless Docker container
     container = client.containers.create(
         base_image,
@@ -174,18 +178,17 @@ def create_and_run_container(test_file: str, HW_file: str, json_filename: str, p
     )
     try:
         # Copy the Python file into the container
-        
+
         container.put_archive("/", create_tar(test_file, 0))
         container.put_archive("/", create_tar(HW_file, 1))
-        
+
         # Get file name from the path
-        test_file = test_file.split('\\')[-1]
+        test_file = test_file.split("\\")[-1]
         HW_file = HW_file.split("\\")[-1]
-        
 
         # Start the container
         container.start()
-        
+
         # Install required packages inside the container
         for package in packages_to_install:
             install_command = f"pip install {package}"
@@ -193,27 +196,30 @@ def create_and_run_container(test_file: str, HW_file: str, json_filename: str, p
 
         container.exec_run("pip install pytest")
         container.exec_run("pip install pytest-json-report --upgrade")
-        
+
         # Execute the Python file inside the container
-        container.exec_run(f"pytest test_HW.py -q --json-report --json-report-file={json_filename}")
-        
+        container.exec_run(
+            f"pytest test_HW.py -q --json-report --json-report-file={json_filename}"
+        )
+
         # Get the report.json file from the container
         bits, _ = container.get_archive(f"/{json_filename}")
         bits_data = b"".join(bits)
-        
+
         # Convert the bits to a tarfile
         tar_file = tarfile.open(fileobj=io.BytesIO(bits_data))
-        
+
         # Extract the report.json file from the tarfile
         tar_file.extractall()
 
     except Exception as e:
         print(e)
-    
+
     # Stop and remove the container
     container.stop()
     container.remove()
- 
+
+
 def create_tar(file_path: str, is_HW: bool) -> bytes:
     """Create a tar archive from a file.
 
@@ -223,11 +229,11 @@ def create_tar(file_path: str, is_HW: bool) -> bytes:
     Returns:
         bytes: tar archive as bytes
     """
-      
-    with open(file_path, 'rb') as file:
+
+    with open(file_path, "rb") as file:
         file_data = file.read()
     tarstream = io.BytesIO()
-    tar = tarfile.TarFile(fileobj=tarstream, mode='w')
+    tar = tarfile.TarFile(fileobj=tarstream, mode="w")
     if is_HW:
         tarinfo = tarfile.TarInfo(name="HW.py")
     else:

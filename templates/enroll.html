@@ -160,7 +160,7 @@
                   // Make sure token is available
                   if (token) {
                     // Check if still logged in
-                    fetch("http://127.0.0.1:8000/logincheck", {
+                    fetch("/logincheck", {
                       method: "GET",
                       headers: {
                         Accept: "application/json",
@@ -181,7 +181,7 @@
                           document.getElementById("studentListInput").value;
 
                         fetch(
-                          `http://127.0.0.1:8000/class/${class_id}/enroll/?class_id=${class_id}&email_list=${email_list}`,
+                          `/class/${class_id}/enroll/?class_id=${class_id}&email_list=${email_list}`,
                           {
                             method: "POST",
                             headers: {

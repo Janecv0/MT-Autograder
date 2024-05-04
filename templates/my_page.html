@@ -114,7 +114,7 @@
         // Make sure token is available
         if (token) {
           // Make a GET request to the API endpoint with the retrieved token
-          fetch("http://127.0.0.1:8000/class/my", {
+          fetch("/class/my", {
             method: "GET",
             headers: {
               Accept: "application/json",

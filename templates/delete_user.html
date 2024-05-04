@@ -161,7 +161,7 @@
         $(document).ready(function () {
           $("#findUser").click(function () {
             const ID = $("#idInput").val();
-            fetch(`http://127.0.0.1:8000/users/${ID}`, {
+            fetch(`/users/${ID}`, {
               method: "GET",
               headers: {
                 Accept: "application/json",
@@ -193,7 +193,7 @@
 
           $("#delUser").click(function () {
             const ID = $("#idInput").val();
-            fetch(`http://127.0.0.1:8000/users/${ID}`, {
+            fetch(`/users/${ID}`, {
               method: "DELETE",
               headers: {
                 Accept: "application/json",

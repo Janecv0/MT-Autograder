@@ -162,7 +162,7 @@
         $(document).ready(function () {
           $("#findClass").click(function () {
             const ID = $("#idInput").val();
-            fetch(`http://127.0.0.1:8000/del_class/${ID}`, {
+            fetch(`/del_class/${ID}`, {
               method: "GET",
               headers: {
                 Accept: "application/json",
@@ -194,7 +194,7 @@
 
           $("#delClass").click(function () {
             const ID = $("#idInput").val();
-            fetch(`http://127.0.0.1:8000/del_class/${ID}`, {
+            fetch(`/del_class/${ID}`, {
               method: "DELETE",
               headers: {
                 Accept: "application/json",

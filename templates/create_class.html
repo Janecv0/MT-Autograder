@@ -8,7 +8,7 @@
 </head>
 <body>
 
-  <script>
+<script>
     /*!
   * Color mode toggler for Bootstrap's docs (https://getbootstrap.com/)
   * Copyright 2011-2024 The Bootstrap Authors
@@ -159,11 +159,10 @@
         })
         .then((response) => {
           if (response.ok) {
-            console.log(response)
             $("#uploadForm").submit(function (event) {
               event.preventDefault();
               var formData = new FormData($(this)[0]);
-              fetch("http://127.0.0.1:8000/logincheck", {
+              fetch("/logincheck", {
                 method: "GET",
                 headers: {
                   Accept: "application/json",
@@ -182,7 +181,7 @@
                     year: $("#yearInput").val(),
                   };
 
-                  fetch("http://127.0.0.1:8000/create_classroom", {
+                  fetch("/create_classroom", {
                     method: "POST",
                     headers: {
                       Accept: "application/json",

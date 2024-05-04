@@ -600,10 +600,12 @@ async def create_upload_file(
     if not file:
         return {"message": "No upload file sent"}
     else:
+        folder = "TESTS"
         prefix = f"HW_{ass_id}_{current_user.id}"
         file_extension = file.filename.split(".").pop()
         file_name = f"{prefix}.{file_extension}"
-        print(file_name)
+        file_name = os.path.join(folder, file_name)
+        os.makedirs(os.path.dirname(file_name), exist_ok=True)
         with open(file_name, "wb") as f:
             content = await file.read()
             f.write(content)
@@ -627,11 +629,11 @@ async def upload_file_ass(
     Returns:
         dict: A dictionary containing the message indicating the success of the upload.
     """
-    prefix = f"TESTS/test_HW_{ass_id}"
+    prefix = f"test_HW_{ass_id}"
     if not file:
         return {"message": "No upload file sent"}
     else:
-        folder = "HW"
+        folder = "TESTS"
         file_extension = file.filename.split(".").pop()
         file_name = f"{prefix}.{file_extension}"
         file_name = os.path.join(folder, file_name)
@@ -1059,12 +1061,12 @@ async def html_read_users_me(request: Request):
 
 
 @app.get("/create_classroom", response_class=HTMLResponse)
-async def html_read_users_me(request: Request):
+async def html_create_class(request: Request):
     return templates.TemplateResponse("create_class.html", {"request": request})
 
 
 @app.get("/class/{class_id}/enroll", response_class=HTMLResponse)
-async def html_read_users_me(request: Request):
+async def html_enroll_users(request: Request):
     return templates.TemplateResponse("enroll.html", {"request": request})
 
 
@@ -1074,7 +1076,7 @@ async def html_change_role(request: Request):
 
 
 @app.get("/class/{class_id}/enrolled_users/")
-async def html_change_role(
+async def html_show_enrolled_users(
     request: Request,
     class_id: int,
     db: Session = Depends(get_db),
@@ -1092,12 +1094,12 @@ async def html_del_user(request: Request):
 
 
 @app.get("/delete_assignment")
-async def html_del_user(request: Request):
+async def html_del_ass(request: Request):
     return templates.TemplateResponse("delete_ass.html", {"request": request})
 
 
 @app.get("/delete_class")
-async def html_del_user(request: Request):
+async def html_del_class(request: Request):
     return templates.TemplateResponse("delete_class.html", {"request": request})
 
 
@@ -1125,4 +1127,93 @@ def html_change_password(request: Request):
 def html_change_password(request: Request):
     return templates.TemplateResponse(
         "change_password_first.html", {"request": request}
+    )
+
+
+@app.get("/class/{class_id}/assignment/{assignment_id}/results")
+async def html_show_ass_results(
+    request: Request,
+    class_id: int,
+    assignment_id: int,
+    db: Session = Depends(get_db),
+):
+    assignment = crud.get_assignment_by_id(db, assignment_id)
+    users = crud.get_users_in_class(db, class_id)
+
+    outcome = []
+    for user in users:
+        item = crud.get_item_by_user_assignment(db, user.id, assignment_id)
+
+        if item is not None:
+            if item.passed:
+                result = "passed"
+            elif item.tested:
+                result = "tested"
+            else:
+                result = "not turned over"
+            mark = item.mark
+
+        else:
+            result = "not turned over"
+            mark = 0
+
+        user_outcome = [user.id, user.username, result, mark]
+
+        outcome.append(user_outcome)
+
+    return templates.TemplateResponse(
+        "show_ass_outcome.html",
+        {
+            "request": request,
+            "ass_name": assignment.name,
+            "outcome": outcome,
+            "ass_id": assignment_id,
+        },
+    )
+
+
+@app.get("/users/{user_id}/assignments")
+async def html_users_ass_results(
+    request: Request,
+    user_id: int,
+    db: Session = Depends(get_db),
+):
+    items = crud.get_user_item(db, user_id)
+    user = crud.get_user(db, user_id)
+    assignments = []
+    classes = []
+    if items is not None:
+        for item in items:
+            assignment = crud.get_assignment_by_id(db, item.assignment_id)
+            assignment_info = [assignment.id, assignment.name]
+            assignments.append(assignment_info)
+
+            classroom = crud.get_classroom_by_id(db, assignment.classroom_id)
+            class_info = [classroom.id, classroom.name]
+            classes.append(class_info)
+
+    return templates.TemplateResponse(
+        "show_user_outcome.html",
+        {
+            "request": request,
+            "username": user.username,
+            "user_id": user.id,
+            "items": items,
+            "classes": classes,
+            "assignments": assignments,
+        },
+    )
+
+
+@app.get("/users/{user_id}/solution/{assignment_id}")
+async def html_show_file(request: Request, user_id: int, assignment_id: int):
+    folder = "HW"
+    filename = f"HW_{assignment_id}_{user_id}.py"
+    file_path = os.path.join(folder, filename)
+
+    with open(file_path, "r") as f:
+        python_code = f.read()
+
+    return templates.TemplateResponse(
+        "show_code.html", {"request": request, "code": python_code}
     )
