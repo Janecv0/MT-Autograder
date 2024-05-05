@@ -191,16 +191,17 @@
                             },
                             body: JSON.stringify(formData),
                           }
-                        )
+                        
                           .then((response) => response.json())
                           .then((data) => {
                             alert(data.message);
                           })
                           .catch((error) => {
                             $("#status").html(
-                              '<div class="alert alert-danger">Error uploading file!</div>'
+                              '<div class="alert alert-danger">Error adding users!</div>'
                             );
-                          });
+                          })
+                          )
                       })
                       .catch((error) => {
                         console.error("Error creating item in DB!", error);

@@ -660,7 +660,7 @@ def is_user_in_db(db: Session, email: str):
     return False
 
 
-def is_student_in_classroom(db: Session, classroom_id: int, student_id: int):
+def is_student_in_classroom(db: Session, classroom_id: int, student_email: str):
     """
     Check if a student is in a classroom.
 
@@ -677,7 +677,7 @@ def is_student_in_classroom(db: Session, classroom_id: int, student_id: int):
     )
     if db_classroom is not None:
         for student in db_classroom.students:
-            if student.id == student_id:
+            if student.email == student_email:
                 return True
         else:
             return False

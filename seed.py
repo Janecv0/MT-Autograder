@@ -75,32 +75,8 @@ teacher = users[1]
 
 classrooms = [
     Classroom(
-        name="S232-OOP",
-        description="Objektově orientované programování",
-        year=2024,
-        owner=teacher,
-    ),
-    Classroom(
-        name="S232-AI",
-        description="Umělá inteligence a neuronové sítě",
-        year=2024,
-        owner=teacher,
-    ),
-    Classroom(
-        name="S232-SVAO",
-        description="Strojové vnímání a analýza obrazu",
-        year=2024,
-        owner=teacher,
-    ),
-    Classroom(
-        name="S232-PIS",
-        description="Projektování informačních systémů",
-        year=2024,
-        owner=teacher,
-    ),
-    Classroom(
-        name="S232-OPSR",
-        description="Optimální a prediktivní systémy řízení",
+        name="S123-Dummy class",
+        description="Dummy class for testing purposes",
         year=2024,
         owner=teacher,
     ),
@@ -121,7 +97,7 @@ session.add(assignment1)
 
 
 # Add students to the classroom
-students = users[2:]  # Exclude admin and teacher
+students = users[1:]  # Exclude admin
 for student in students:
     classroom.students.append(student)
 

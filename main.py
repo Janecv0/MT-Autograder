@@ -600,7 +600,7 @@ async def create_upload_file(
     if not file:
         return {"message": "No upload file sent"}
     else:
-        folder = "TESTS"
+        folder = "HW"
         prefix = f"HW_{ass_id}_{current_user.id}"
         file_extension = file.filename.split(".").pop()
         file_name = f"{prefix}.{file_extension}"
@@ -789,7 +789,7 @@ async def enroll_classroom(
         if is_email(email):
             if crud.is_teacher_plus(db, current_user.id):
                 if crud.is_user_in_db(db, email):
-                    if not crud.is_student_in_classroom(db, email, class_id):
+                    if not crud.is_student_in_classroom(db, class_id, email):
                         enrolled_users.append(email)
                         return crud.enroll_student(
                             db=db,
