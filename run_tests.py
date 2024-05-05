@@ -63,12 +63,14 @@ def get_points_from_test(test):
 
     pass_point, fail_point = 0, 0
     error_message = ""
-
-    if test["outcome"] == "passed":
-        pass_point = int(test["nodeid"][-1])
-    elif test["outcome"] == "failed":
-        fail_point = int(test["nodeid"][-1])
-        error_message = test["call"]["crash"]["message"]
+    try:
+        if test["outcome"] == "passed":
+            pass_point = int(test["nodeid"][-1])
+        elif test["outcome"] == "failed":
+            fail_point = int(test["nodeid"][-1])
+            error_message = test["call"]["crash"]["message"]
+    except ValueError:
+        return 0, 0, "Invalid test name, contact the teacher."
 
     return pass_point, fail_point, error_message
 
