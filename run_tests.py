@@ -3,6 +3,10 @@ import tarfile
 import json
 import os
 import docker
+import re
+
+re_points = re.compile(r"_\d")
+re_numeric = re.compile(r"\d")
 
 
 def run_tests(test_n: int, user: int):
@@ -65,10 +69,16 @@ def get_points_from_test(test):
     error_message = ""
     try:
         if test["outcome"] == "passed":
-            pass_point = int(test["nodeid"][-1])
+            pass_point = re_points.search(test["nodeid"]).group()[1]
+            if pass_point is not None:
+                pass_point = int(re_numeric.search(pass_point).group())
         elif test["outcome"] == "failed":
-            fail_point = int(test["nodeid"][-1])
-            error_message = test["call"]["crash"]["message"]
+            fail_point = re_points.search(test["nodeid"]).group()[1]
+            if fail_point is not None:
+                fail_point = int(re_numeric.search(fail_point).group())
+                error_message = test["call"]["crash"]["message"]
+            else:
+                error_message = "Invalid test name, contact the teacher."
     except ValueError:
         return 0, 0, "Invalid test name, contact the teacher."
 
@@ -119,12 +129,14 @@ def get_test_points(tests):
     """
 
     pass_points, fail_points = 0, 0
-    error_message = []
+    error_messages = []
     for test in tests:
         pass_point, fail_point, error_message = get_points_from_test(test)
         pass_points += pass_point
         fail_points += fail_point
-    return pass_points, fail_points, error_message
+        if error_message != "":
+            error_messages.append(error_message)
+    return pass_points, fail_points, error_messages
 
 
 def how_did_we_do(tests, print_to_terminal: bool):
