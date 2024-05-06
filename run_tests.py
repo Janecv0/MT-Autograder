@@ -5,8 +5,8 @@ import os
 import docker
 import re
 
-re_points = re.compile(r"_\d")
-re_numeric = re.compile(r"\d")
+re_points = re.compile(r"_\d+")
+re_numeric = re.compile(r"\d+")
 
 
 def run_tests(test_n: int, user: int):
@@ -69,13 +69,13 @@ def get_points_from_test(test):
     error_message = ""
     try:
         if test["outcome"] == "passed":
-            pass_point = re_points.search(test["nodeid"]).group()[1]
+            pass_point = re_points.findall(test["nodeid"])[-1]
             if pass_point is not None:
-                pass_point = int(re_numeric.search(pass_point).group())
+                pass_point = int(re_numeric.findall(pass_point)[0])
         elif test["outcome"] == "failed":
-            fail_point = re_points.search(test["nodeid"]).group()[1]
+            fail_point = re_points.findall(test["nodeid"])[-1]
             if fail_point is not None:
-                fail_point = int(re_numeric.search(fail_point).group())
+                fail_point = int(re_numeric.findall(fail_point)[0])
                 error_message = test["call"]["crash"]["message"]
             else:
                 error_message = "Invalid test name, contact the teacher."
