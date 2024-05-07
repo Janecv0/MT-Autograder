@@ -10,6 +10,8 @@ Are you bored of marking students python homeworks? If your answer is yes this w
 ### Install docker
 For testing docker is needed. [You can get it here](https://docs.docker.com/get-docker/).
 
+Also pull latest python image: ```docker pull python ```
+
 ### Clone repo
 After copying or downloading this repo get into develop_api branch.
 ### Create virtual environment
