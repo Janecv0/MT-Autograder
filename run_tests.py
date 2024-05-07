@@ -19,6 +19,7 @@ def run_tests(test_n: int, user: int):
     Returns:
         dict: A dictionary containing the mark, pass points, and failed points.
     """
+    print("run_tests: run tests begin")
     HW_folder = ".\HW"
     json_filename = f"HW_{test_n}_{user}_report.json"
     json_filename_with_path = os.path.join(HW_folder, json_filename)
@@ -178,8 +179,12 @@ def create_and_run_container(
         json_filename (str): json file name
         packages_to_install (list): list of packages to install
     """
+    print("create_and_run_container: begin")
+    
     client = docker.from_env()
 
+    print("create_and_run_container: client created")
+    
     # Define the base Docker image
     base_image = "python:latest"
 
@@ -190,31 +195,41 @@ def create_and_run_container(
         detach=True,
         privileged=False,
     )
+    
+    print(f"create_and_run_container: container created {container}")
+    
     try:
         # Copy the Python file into the container
-
+        print(f"create_and_run_container: test_file_path {test_file}")
         container.put_archive("/", create_tar(test_file, 0))
+        print(f"create_and_run_container: HW_file_path {HW_file}")
         container.put_archive("/", create_tar(HW_file, 1))
 
         # Get file name from the path
         test_file = test_file.split("\\")[-1]
         HW_file = HW_file.split("\\")[-1]
+        print(f"create_and_run_container: test_file {test_file}")
+        print(f"create_and_run_container: HW_file {HW_file}")
 
         # Start the container
         container.start()
+        print("create_and_run_container: container started")
 
         # Install required packages inside the container
         for package in packages_to_install:
             install_command = f"pip install {package}"
             container.exec_run(install_command)
+        print(f"create_and_run_container: packages installed {packages_to_install}")
 
-        container.exec_run("pip install pytest")
-        container.exec_run("pip install pytest-json-report --upgrade")
+        print(container.exec_run("pip install pytest"))
+        print(container.exec_run("pip install pytest-json-report --upgrade"))
+        
+        print("create_and_run_container: pytest installed")
 
         # Execute the Python file inside the container
-        container.exec_run(
+        print(container.exec_run(
             f"pytest test_HW.py -q --json-report --json-report-file={json_filename}"
-        )
+        ))
 
         # Get the report.json file from the container
         bits, _ = container.get_archive(f"/{json_filename}")
@@ -222,6 +237,7 @@ def create_and_run_container(
 
         # Convert the bits to a tarfile
         tar_file = tarfile.open(fileobj=io.BytesIO(bits_data))
+        print("create_and_run_container: tar file created")
 
         # Extract the report.json file from the tarfile
         tar_file.extractall()
@@ -230,8 +246,8 @@ def create_and_run_container(
         print(e)
 
     # Stop and remove the container
-    container.stop()
-    container.remove()
+    print(container.stop())
+    print(container.remove())
 
 
 def create_tar(file_path: str, is_HW: bool) -> bytes:
