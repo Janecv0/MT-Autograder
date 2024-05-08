@@ -27,12 +27,17 @@ def run_tests(test_n: int, user: int):
     hw_filename_with_path = os.path.join(HW_folder, hw_filename)
     test_filename = f"test_HW_{test_n}.py"
     test_filename_with_path = os.path.join("TESTS", test_filename)
+
     if not os.path.isfile(hw_filename_with_path):
         print(f"File {hw_filename_with_path} does not exist")
+
+    elif not os.path.isfile(test_filename_with_path):
+        print(f"File {test_filename_with_path} does not exist")
+
     else:
         create_and_run_container(
-        test_filename_with_path, hw_filename_with_path, json_filename, []
-    )
+            test_filename_with_path, hw_filename_with_path, json_filename, []
+        )
 
     os.replace(json_filename, json_filename_with_path)
 
@@ -182,11 +187,11 @@ def create_and_run_container(
         packages_to_install (list): list of packages to install
     """
     print("create_and_run_container: begin")
-    
+
     client = docker.from_env()
 
     print("create_and_run_container: client created")
-    
+
     # Define the base Docker image
     base_image = "python:latest"
 
@@ -197,9 +202,9 @@ def create_and_run_container(
         detach=True,
         privileged=False,
     )
-    
+
     print(f"create_and_run_container: container created {container}")
-    
+
     try:
         # Copy the Python file into the container
         print(f"create_and_run_container: test_file_path {test_file}")
@@ -225,13 +230,15 @@ def create_and_run_container(
 
         print(container.exec_run("pip install pytest"))
         print(container.exec_run("pip install pytest-json-report --upgrade"))
-        
+
         print("create_and_run_container: pytest installed")
 
         # Execute the Python file inside the container
-        print(container.exec_run(
-            f"pytest test_HW.py -q --json-report --json-report-file={json_filename}"
-        ))
+        print(
+            container.exec_run(
+                f"pytest test_HW.py -q --json-report --json-report-file={json_filename}"
+            )
+        )
 
         # Get the report.json file from the container
         bits, _ = container.get_archive(f"/{json_filename}")
