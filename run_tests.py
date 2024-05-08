@@ -20,15 +20,17 @@ def run_tests(test_n: int, user: int):
         dict: A dictionary containing the mark, pass points, and failed points.
     """
     print("run_tests: run tests begin")
-    HW_folder = ".\HW"
+    HW_folder = "./HW"
     json_filename = f"HW_{test_n}_{user}_report.json"
     json_filename_with_path = os.path.join(HW_folder, json_filename)
     hw_filename = f"HW_{test_n}_{user}.py"
     hw_filename_with_path = os.path.join(HW_folder, hw_filename)
     test_filename = f"test_HW_{test_n}.py"
     test_filename_with_path = os.path.join("TESTS", test_filename)
-
-    create_and_run_container(
+    if not os.path.isfile(hw_filename_with_path):
+        print(f"File {hw_filename_with_path} does not exist")
+    else:
+        create_and_run_container(
         test_filename_with_path, hw_filename_with_path, json_filename, []
     )
 
@@ -246,8 +248,8 @@ def create_and_run_container(
         print(e)
 
     # Stop and remove the container
-    print(container.stop())
-    print(container.remove())
+    container.stop()
+    container.remove()
 
 
 def create_tar(file_path: str, is_HW: bool) -> bytes:
