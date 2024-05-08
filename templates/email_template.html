@@ -15,22 +15,36 @@
         You have been added to automated grading software. Below are your login
         credentials:
       </p>
-      <div style="margin-top: 20px;"></div>
-        <a href="http://194.182.79.42:8000/login" style="display: inline-block; padding: 10px 20px; background-color: #ff5722; color: #fff; text-decoration: none; border-radius: 5px;">Click here</a>
+
+      <div
+        style="
+          margin-top: 30px;
+          background-color: #fff;
+          padding: 15px;
+          border-radius: 5px;
+          border: 1px solid #ddd;
+          text-align: left;
+        "
+      >
+        <p><strong>Login:</strong> <span>{{login}}</span></p>
+        <p><strong>Password:</strong> <span>{{temp_password}}</span></p>
       </div>
 
-    <div style="
-        margin-top: 30px;
-        background-color: #fff;
-        padding: 15px;
-        border-radius: 5px;
-        border: 1px solid #ddd;
-        text-align: left;
-      "
-    >
-      <p><strong>Login:</strong> <span>{{login}}</span></p>
-      <p><strong>Password:</strong> <span>{{temp_password}}</span></p>
+      <div style="margin-top: 20px"></div>
+      <a
+        href="https://autograder.in4you.cz/login"
+        style="
+          display: inline-block;
+          padding: 10px 20px;
+          background-color: #337ab7;
+          color: #fff;
+          text-decoration: none;
+          border-radius: 5px;
+        "
+        >Login</a
+      >
     </div>
+
     <div style="margin-top: 20px; color: #ff5722; font-weight: bold">
       <p>
         For security reasons, you will be prompted to change your password at
