@@ -971,6 +971,44 @@ async def is_first_login(
         return HTMLResponse(status_code=200, content="Not first login")
 
 
+@app.get("/users/me/all_items/")
+async def read_own_items(
+    current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
+    db: Session = Depends(get_db),
+):
+    """
+    Get the items owned by the current authenticated user.
+
+    Args:
+        current_user (User): The current authenticated user.
+        db (Session, optional): The database session. Defaults to Depends(get_db).
+
+    Returns:
+        List[Item]: The items owned by the current authenticated user.
+    """
+    items = crud.get_user_item(db, current_user.id)
+    user = crud.get_user(db, current_user.id)
+    assignments = []
+    classes = []
+    if items is not None:
+        for item in items:
+            assignment = crud.get_assignment_by_id(db, item.assignment_id)
+            assignment_info = [assignment.id, assignment.name]
+            assignments.append(assignment_info)
+
+            classroom = crud.get_classroom_by_id(db, assignment.classroom_id)
+            class_info = [classroom.id, classroom.name]
+            classes.append(class_info)
+
+        return {
+            "username": user.username,
+            "user_id": user.id,
+            "items": items,
+            "classes": classes,
+            "assignments": assignments,
+        }
+
+
 """
 HTML endpoints
 """
@@ -1219,3 +1257,8 @@ async def html_show_file(request: Request, user_id: int, assignment_id: int):
     return templates.TemplateResponse(
         "show_code.html", {"request": request, "code": python_code}
     )
+
+
+@app.get("/my_assignments")
+async def html_my_assignments(request: Request):
+    return templates.TemplateResponse("my_assignments.html", {"request": request})
