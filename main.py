@@ -653,9 +653,9 @@ async def run(
     current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
     db: Session = Depends(get_db),
 ):
-    print("main: run endpoint called")
+    # print("main: run endpoint called")
     resultfunc = run_tests(ass_id, current_user.id)
-    print(f"main: resultfunc {resultfunc}")
+    # print(f"main: resultfunc {resultfunc}")
     if type(resultfunc["mark"]) == int or float:
         passed = True if resultfunc["mark"] >= 50 else False
         crud.update_item(
