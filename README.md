@@ -13,7 +13,7 @@ For testing docker is needed. [You can get it here](https://docs.docker.com/get-
 Also pull latest python image: ```docker pull python ```
 
 ### Clone repo
-After copying or downloading this repo get into develop_api branch.
+After copying or downloading this repo get into main branch for deployment, other for development
 ### Create virtual environment
 ```
 python -m venv venv
@@ -24,6 +24,10 @@ python -m venv venv
 ```
 (for windows cmd)
 
+```
+source .venv/Scripts/activate
+```
+(for linux terminal)
 ### Install requirements
 ```
 pip install -r .\req.txt
@@ -38,12 +42,16 @@ MAIL_USERNAME=""
 MAIL_PASSWORD=""
 MAIL_FROM=""
 MAIL_SERVER=""
-
 ```
 ### Seed the DB
 Run `seed.py` it creates db, with dummy users, classes, assignments, etc.
 
 ### Start uvicorn server
+```
+uvicorn main:app
+```
+
+Or you can use this for development, don't use it for deployment it's less stable.
 ```
 uvicorn main:app --reload
 ```
@@ -83,7 +91,7 @@ Each assignment file to test hw must start with this code for importing students
 from HW import __name_of_function_
  ```
 
-Otherwise this test file is regular pytest code with naming convention `test_{whatever}_{number of points(only one int is allowed)}`
+Otherwise this test file is regular pytest code with naming convention `test_{whatever}_{number of points(can be more then one int)}`
 
 > [!TIP]
 > Example
@@ -99,21 +107,4 @@ As teacher you can see results of students with press of button in assignment in
 
 
 ## Goal
-Server into which teacher logs in, upload assignment and see status of individual students on it. There is also place for students to upload their homeworks and get direct feedback from the system such as percentage, mark and errors, that come out during testing. 
-
-## Work done
-  
-  ### Picking testing framework
-  Out of : pytest, unittest, nose, doctest, Robot Framework. `Pytest` was picked.
-
-  ### Running test from code with outcome capture
-  Using `pytest` plugin `pytest-json-report` outcome is captured. From json file all needed data are taken.
-
-  ### SQL database
-  Using `sqlalchemy` SQL database is created. Files for this: `database.py`- database setup and `models.py`- table setup
-
-  ### Picking back-end
-  Out of: Flask, Django, FastAPI ->  `fastapi`
-
-  ### Coding back-end
-  Most of needed function almost done.
+Server into which teacher logs in, upload assignment and see status of individual students on it. There is also place for students to upload their homeworks and get direct feedback from the system such as percentage, mark and errors, that come out during testing.

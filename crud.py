@@ -8,6 +8,16 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def add_role_hide_password(db: Session, user):
+    """
+    Adds role to the user and hides the password.
+
+    Args:
+        db (Session): The database session.
+        user: The user object.
+
+    Returns:
+        The updated user object.
+    """
     user.roles = get_user_role(db, user.id)
     user.hashed_password = None
     return user
@@ -324,6 +334,16 @@ def is_super_teacher(db: Session, user_id: int):
 
 
 def is_teacher_plus(db: Session, user_id: int):
+    """
+    Checks if a user is a teacher, super teacher, or admin.
+
+    Args:
+        db (Session): The database session.
+        user_id (int): The ID of the user.
+
+    Returns:
+        bool: True if the user is a teacher, super teacher, or admin. False otherwise.
+    """
     return (
         is_teacher(db, user_id)
         or is_super_teacher(db, user_id)
@@ -332,6 +352,16 @@ def is_teacher_plus(db: Session, user_id: int):
 
 
 def is_super_teacher_plus(db: Session, user_id: int):
+    """
+    Checks if a user is a super teacher plus or an admin.
+
+    Args:
+        db (Session): The database session.
+        user_id (int): The ID of the user.
+
+    Returns:
+        bool: True if the user is a super teacher plus or an admin, False otherwise.
+    """
     return is_super_teacher(db, user_id) or is_admin(db, user_id)
 
 
@@ -736,6 +766,9 @@ def get_item_pass(db: Session, user_id: int, ass_id: int):
 
 
 def get_users_in_class(db: Session, class_id: int):
+    """
+    Return users in given class
+    """
     users = (
         db.query(models.User)
         .join(models.UserClassroom, models.User.id == models.UserClassroom.user_id)
@@ -748,18 +781,33 @@ def get_users_in_class(db: Session, class_id: int):
 
 
 def delete_assignment(db: Session, ass_id: int):
+    """Delete an assignment from the database by its ID."""
+
     db.query(models.Assignment).filter(models.Assignment.id == ass_id).delete()
     db.commit()
     return {"message": "Assignment deleted successfully"}
 
 
 def delete_classroom(db: Session, ass_id: int):
+    """Delete a classroom from the database by its ID."""
+
     db.query(models.Classroom).filter(models.Classroom.id == ass_id).delete()
     db.commit()
     return {"message": "Class deleted successfully"}
 
 
 def pop_user_from_class(db: Session, user_id: int, class_id: int):
+    """
+    Remove a user from a class.
+
+    Args:
+        db (Session): The database session.
+        user_id (int): The ID of the user to remove.
+        class_id (int): The ID of the class from which to remove the user.
+
+    Returns:
+        dict: A dictionary with a message indicating the success of the operation.
+    """
     db.query(models.UserClassroom).filter(
         models.UserClassroom.user_id == user_id
     ).filter(models.UserClassroom.classroom_id == class_id).delete()
@@ -768,6 +816,7 @@ def pop_user_from_class(db: Session, user_id: int, class_id: int):
 
 
 def update_user_password(db: Session, user_id: int, new_password: str):
+    """Update user password"""
     user = db.query(models.User).filter(models.User.id == user_id).first()
     user.hashed_password = get_password_hash(new_password)
     db.commit()
@@ -782,6 +831,8 @@ def is_first_login(db: Session, user_id: int):
 
 
 def first_password_changed(db: Session, user_id: int):
+    """Update the first login password status for a user in the database."""
+
     user = db.query(models.User).filter(models.User.id == user_id).first()
     user.is_first_login = False
     db.commit()
@@ -789,6 +840,7 @@ def first_password_changed(db: Session, user_id: int):
 
 
 def get_item_by_user_assignment(db: Session, user_id: int, assignment_id: int):
+    """Retrieve an item by user and assignment ID from the database."""
     return (
         db.query(models.Item)
         .filter(models.Item.owner_id == user_id)

@@ -10,16 +10,25 @@ re_numeric = re.compile(r"\d+")
 
 
 def run_tests(test_n: int, user: int):
-    """Run the tests and return the grade and the points.
+    """
+    Run tests for a specific homework assignment.
 
     Args:
-        test_n (int): The assignmment number.
-        user (str): The user's name.
+        test_n (int): The test number.
+        user (int): The user ID.
 
     Returns:
-        dict: A dictionary containing the mark, pass points, and failed points.
+        dict: A dictionary containing the test results.
+
+    Raises:
+        FileNotFoundError: If the homework file or test file does not exist.
+
     """
-    # print("run_tests: run tests begin")
+    # Rest of the code...
+
+
+def run_tests(test_n: int, user: int):
+
     HW_folder = "./HW"
     json_filename = f"HW_{test_n}_{user}_report.json"
     json_filename_with_path = os.path.join(HW_folder, json_filename)
@@ -50,7 +59,8 @@ def run_tests(test_n: int, user: int):
 
 
 def print_summary(test):
-    """Print the summary of a test.
+    """
+    Print the summary of a test.
 
     Args:
         test (dict): The test dictionary.
@@ -64,15 +74,19 @@ def print_summary(test):
 
 
 def get_points_from_test(test):
-    """Get the pass points and fail points from a test.
+    """
+    Extracts the pass points, fail points, and error message from a test.
 
     Args:
-        test (dict): The test dictionary.
+        test (dict): A dictionary representing a test.
 
     Returns:
-        tuple: A tuple containing the pass points and fail points.
-    """
+        tuple: A tuple containing the pass points, fail points, and error message.
 
+    Raises:
+        ValueError: If the test name is invalid.
+
+    """
     pass_point, fail_point = 0, 0
     error_message = ""
     try:
@@ -127,7 +141,8 @@ def mark_test(pass_points, fail_points, letter_grade=False):
 
 
 def get_test_points(tests):
-    """Calculate the total pass points and fail points from a list of tests.
+    """
+    Calculate the total pass points and fail points from a list of tests.
 
     Args:
         tests (list): A list of test dictionaries.
@@ -148,7 +163,8 @@ def get_test_points(tests):
 
 
 def how_did_we_do(tests, print_to_terminal: bool):
-    """Calculate the mark, pass points, and failed points from a list of tests.
+    """
+    Calculate the mark, pass points, and failed points from a list of tests.
 
     Args:
         tests (list): A list of test dictionaries.
@@ -178,7 +194,8 @@ def how_did_we_do(tests, print_to_terminal: bool):
 def create_and_run_container(
     test_file: str, HW_file: str, json_filename: str, packages_to_install: list
 ):
-    """Create a Docker container and run the tests inside it.
+    """
+    Create a Docker container and run the tests inside it.
 
     Args:
         test_file (str): path to the test file
@@ -186,11 +203,8 @@ def create_and_run_container(
         json_filename (str): json file name
         packages_to_install (list): list of packages to install
     """
-    # print("create_and_run_container: begin")
 
     client = docker.from_env()
-
-    # print("create_and_run_container: client created")
 
     # Define the base Docker image
     base_image = "python:latest"
@@ -203,35 +217,25 @@ def create_and_run_container(
         privileged=False,
     )
 
-    # print(f"create_and_run_container: container created {container}")
-
     try:
         # Copy the Python file into the container
-        # print(f"create_and_run_container: test_file_path {test_file}")
         container.put_archive("/", create_tar(test_file, 0))
-        # print(f"create_and_run_container: HW_file_path {HW_file}")
         container.put_archive("/", create_tar(HW_file, 1))
 
         # Get file name from the path
         test_file = test_file.split("\\")[-1]
         HW_file = HW_file.split("\\")[-1]
-        # print(f"create_and_run_container: test_file {test_file}")
-        # print(f"create_and_run_container: HW_file {HW_file}")
 
         # Start the container
         container.start()
-        # print("create_and_run_container: container started")
 
         # Install required packages inside the container
         for package in packages_to_install:
             install_command = f"pip install {package}"
             container.exec_run(install_command)
-        # print(f"create_and_run_container: packages installed {packages_to_install}")
 
         container.exec_run("pip install pytest")
         container.exec_run("pip install pytest-json-report --upgrade")
-
-        # print("create_and_run_container: pytest installed")
 
         # Execute the Python file inside the container
 
@@ -245,7 +249,6 @@ def create_and_run_container(
 
         # Convert the bits to a tarfile
         tar_file = tarfile.open(fileobj=io.BytesIO(bits_data))
-        # print("create_and_run_container: tar file created")
 
         # Extract the report.json file from the tarfile
         tar_file.extractall()

@@ -841,6 +841,15 @@ async def enroll_classroom(
 async def loginCheck(
     current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)]
 ):
+    """
+    Checks if the user is logged in.
+
+    Parameters:
+    - current_user: The current logged-in user.
+
+    Returns:
+    - An HTMLResponse with a status code of 200 and a content message indicating that the user is logged in.
+    """
     return HTMLResponse(status_code=200, content="You are logged in")
 
 
@@ -850,6 +859,21 @@ async def get_assignments_by_id(
     current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
     db: Session = Depends(get_db),
 ):
+    """
+    Retrieve an assignment by its ID.
+
+    Args:
+        id (int): The ID of the assignment to retrieve.
+        current_user (schemas.User): The current authenticated user.
+        db (Session, optional): The database session. Defaults to Depends(get_db).
+
+    Returns:
+        schemas.Assignment: The retrieved assignment.
+
+    Raises:
+        HTTPException: If the assignment is not found.
+    """
+
     assignment = crud.get_assignment_by_id(db, id)
     if assignment is None:
         raise HTTPException(status_code=404, detail="Assignment not found")
@@ -858,11 +882,26 @@ async def get_assignments_by_id(
 
 
 @app.delete("/assignment/{id}")
-async def get_assignments_by_id(
+async def del_assignments_by_id(
     id: int,
     current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
     db: Session = Depends(get_db),
 ):
+    """
+    Delete an assignment by its ID.
+
+    Args:
+        id (int): The ID of the assignment to delete.
+        current_user (schemas.User): The current authenticated user.
+        db (Session, optional): The database session. Defaults to Depends(get_db).
+
+    Returns:
+        Any: The result of the delete operation.
+
+    Raises:
+        HTTPException: If the current user does not have enough permissions or if the assignment is not found.
+    """
+
     if not crud.is_super_teacher_plus(db, current_user.id):
         raise HTTPException(status_code=401, detail="Not enough permissions")
     if crud.get_assignment_by_id(db, id) is None:
@@ -872,11 +911,25 @@ async def get_assignments_by_id(
 
 
 @app.get("/del_class/{id}")
-async def get_assignments_by_id(
+async def get_class_by_id(
     id: int,
     current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
     db: Session = Depends(get_db),
 ):
+    """
+    Retrieve a classroom by its ID.
+
+    Args:
+        id (int): The ID of the classroom to retrieve.
+        current_user (schemas.User): The current authenticated user.
+        db (Session, optional): The database session. Defaults to Depends(get_db).
+
+    Returns:
+        schemas.Classroom: The retrieved classroom.
+
+    Raises:
+        HTTPException: If the classroom is not found.
+    """
     classroom = crud.get_classroom_by_id(db, id)
     if classroom is None:
         raise HTTPException(status_code=404, detail="Assignment not found")
@@ -885,11 +938,25 @@ async def get_assignments_by_id(
 
 
 @app.delete("/del_class/{id}")
-async def get_assignments_by_id(
+async def del_class_by_id(
     id: int,
     current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
     db: Session = Depends(get_db),
 ):
+    """
+    Delete a class by its ID.
+
+    Args:
+        id (int): The ID of the class to delete.
+        current_user (schemas.User): The current authenticated user.
+        db (Session, optional): The database session. Defaults to Depends(get_db).
+
+    Raises:
+        HTTPException: If the current user does not have enough permissions or if the class is not found.
+
+    Returns:
+        Any: The result of the delete operation.
+    """
     if not crud.is_super_teacher_plus(db, current_user.id):
         raise HTTPException(status_code=401, detail="Not enough permissions")
     if crud.get_classroom_by_id(db, id) is None:
@@ -904,18 +971,26 @@ async def get_enrolled_users_list(
     current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
     db: Session = Depends(get_db),
 ):
+    """
+    Retrieve the list of enrolled users in a class.
+
+    Args:
+        id (int): The ID of the class.
+        current_user (schemas.User): The current authenticated user.
+        db (Session, optional): The database session. Defaults to Depends(get_db).
+
+    Returns:
+        List[schemas.User]: The list of enrolled users, with redacted information for non-teacher users.
+    """
     enrolled_users = crud.get_users_in_class(db, id)
     if crud.is_teacher_plus(db, current_user.id):
         return enrolled_users
-
     else:
         redacted_list = []
         for user in enrolled_users:
             if user.id != current_user.id:
                 user = None
-
             redacted_list.append(user)
-
         return redacted_list
 
 
@@ -926,6 +1001,21 @@ async def remove_user_from_class(
     current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
     db: Session = Depends(get_db),
 ):
+    """
+    Removes a user from a class.
+
+    Args:
+        class_id (int): The ID of the class.
+        user_id (int): The ID of the user to be removed.
+        current_user (schemas.User): The current user making the request.
+        db (Session, optional): The database session. Defaults to Depends(get_db).
+
+    Returns:
+        Any: The result of removing the user from the class.
+
+    Raises:
+        HTMLResponse: If the current user is not a teacher.
+    """
     if is_teacher_or_higher(current_user, db):
         return crud.pop_user_from_class(db, user_id, class_id)
     else:
@@ -939,6 +1029,19 @@ async def change_password(
     current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
     db: Session = Depends(get_db),
 ):
+    """
+    Change the password for the current user.
+
+    Args:
+        new_password (str): The new password to set.
+        old_password (str): The old password for verification.
+        current_user (schemas.User): The current user object.
+        db (Session, optional): The database session. Defaults to Depends(get_db).
+
+    Returns:
+        HTMLResponse: A response indicating whether the password was changed successfully or not.
+    """
+
     if auth.verify_password(old_password, current_user.hashed_password):
         if crud.update_user_password(db, current_user.id, new_password):
             return HTMLResponse(status_code=200, content="Password changed")
@@ -952,6 +1055,18 @@ async def change_password(
     current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
     db: Session = Depends(get_db),
 ):
+    """
+    Change the password for the current user.
+
+    Args:
+        new_password (str): The new password to set.
+        current_user (schemas.User): The current user object.
+        db (Session, optional): The database session. Defaults to Depends(get_db).
+
+    Returns:
+        HTMLResponse: The response indicating whether the password was changed successfully or not.
+    """
+
     if crud.is_first_login(db, current_user.id):
         if crud.update_user_password(db, current_user.id, new_password):
             crud.first_password_changed(db, current_user.id)
@@ -965,6 +1080,16 @@ async def is_first_login(
     current_user: Annotated[schemas.User, Depends(auth.get_current_active_user)],
     db: Session = Depends(get_db),
 ):
+    """
+    Check if the current user is logging in for the first time.
+
+    Args:
+        current_user (schemas.User): The current user object.
+        db (Session, optional): The database session. Defaults to Depends(get_db).
+
+    Returns:
+        HTMLResponse: The response indicating whether it's the first login or not.
+    """
     if crud.is_first_login(db, current_user.id):
         return HTMLResponse(status_code=202, content="First login")
     else:
@@ -1016,17 +1141,11 @@ HTML endpoints
 
 @app.get("/", response_class=HTMLResponse)
 def html_read_root(request: Request):
-    """
-    Root endpoint to check if the server is running.
-    """
     return templates.TemplateResponse("index.html", {"request": request})
 
 
 @app.get("/nav")
 async def html_nav(request: Request):
-    """
-    Navigation bar endpoint for placeholder purposes.
-    """
     return templates.TemplateResponse("nav.html", {"request": request})
 
 
@@ -1037,7 +1156,7 @@ async def html_my_page(request: Request):
 
 @app.get("/favicon.ico")
 async def html_favicon():
-    return FileResponse("./images/favicon.jpg")
+    return FileResponse("./images/favicon.png")
 
 
 @app.get("/classes")
@@ -1059,6 +1178,18 @@ async def html_get_class(
     user_id: int | None = None,
     db: Session = Depends(get_db),
 ):
+    """
+    Retrieve HTML template response for a specific class.
+
+    Args:
+        class_id (int): The ID of the class.
+        request (Request): The request object.
+        user_id (int | None, optional): The ID of the user. Defaults to None.
+        db (Session, optional): The database session. Defaults to Depends(get_db).
+
+    Returns:
+        TemplateResponse: The HTML template response.
+    """
     ass_pass = []
     class_info = crud.get_classroom_by_id(db=db, classroom_id=class_id)
     if user_id is not None:
@@ -1177,6 +1308,19 @@ async def html_show_ass_results(
     assignment_id: int,
     db: Session = Depends(get_db),
 ):
+    """
+    Display the results of an assignment in HTML format.
+
+    Args:
+        request (Request): The HTTP request object.
+        class_id (int): The ID of the class.
+        assignment_id (int): The ID of the assignment.
+        db (Session, optional): The database session. Defaults to Depends(get_db).
+
+    Returns:
+        TemplateResponse: The HTML template response containing the assignment results.
+    """
+
     assignment = crud.get_assignment_by_id(db, assignment_id)
     users = crud.get_users_in_class(db, class_id)
 
@@ -1218,6 +1362,17 @@ async def html_users_ass_results(
     user_id: int,
     db: Session = Depends(get_db),
 ):
+    """
+    Retrieve HTML template response for displaying a user's assignment results.
+
+    Args:
+        request (Request): The incoming request.
+        user_id (int): The ID of the user.
+        db (Session, optional): The database session. Defaults to Depends(get_db).
+
+    Returns:
+        TemplateResponse: The HTML template response.
+    """
     items = crud.get_user_item(db, user_id)
     user = crud.get_user(db, user_id)
     assignments = []

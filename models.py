@@ -6,18 +6,21 @@ from database import Base
 
 class User(Base):
     """
-    Represents a user in the db.
+    Represents a user in the system.
 
     Attributes:
-        id (int): The unique identifier of the user.
+        id (int): The unique identifier for the user.
         username (str): The username of the user.
         email (str): The email address of the user.
         hashed_password (str): The hashed password of the user.
-        role (str): The role of the user (default is "Student").
-        is_active (bool): Indicates if the user is active (default is True).
-        items (relationship): The items owned by the user.
-        assignments (relationship): The assignments owned by the user.
-        classrooms (relationship): The classrooms owned by the user.
+        role_id (int): The foreign key referencing the user's role.
+        role (Role): The role of the user.
+        is_active (bool): Indicates whether the user is active or not.
+        items (List[Item]): The items owned by the user.
+        own_assignments (List[Assignment]): The assignments owned by the user.
+        own_classrooms (List[Classroom]): The classrooms owned by the user.
+        classrooms (List[Classroom]): The classrooms the user is enrolled in.
+        is_first_login (bool): Indicates whether it is the user's first login or not.
     """
 
     __tablename__ = "users"
@@ -44,21 +47,21 @@ class User(Base):
 
 class Item(Base):
     """
-    Represents an item (homework) in the db.
+    Represents an item in the system.
 
     Attributes:
         id (int): The unique identifier of the item.
         filename (str): The filename of the item.
         description (str): The description of the item.
-        tested (bool): Indicates if the item has been tested (default is False).
-        passed (bool): Indicates if the item has passed the test (default is False).
-        mark (int): The mark of the item (default is 0).
-        pass_point (int): The pass point of the item (default is 0).
-        fail_point (int): The fail point of the item (default is 0).
+        tested (bool): Indicates whether the item has been tested.
+        passed (bool): Indicates whether the item has passed the test.
+        mark (int): The mark assigned to the item.
+        pass_point (int): The pass point for the item.
+        fail_point (int): The fail point for the item.
         owner_id (int): The ID of the owner of the item.
-        owner (relationship): The owner of the item.
+        owner (User): The owner of the item.
         assignment_id (int): The ID of the assignment the item belongs to.
-        assignment (relationship): The assignment the item belongs to.
+        assignment (Assignment): The assignment the item belongs to.
     """
 
     __tablename__ = "items"
@@ -81,16 +84,19 @@ class Item(Base):
 
 class Assignment(Base):
     """
-    Represents an assignment in the db.
+    Represents an assignment in the system.
 
     Attributes:
-        id (int): The unique identifier of the assignment.
-        filename (str): The filename of the assignment.
+        id (int): The unique identifier for the assignment.
+        name (str): The name of the assignment.
+        filename (str): The filename associated with the assignment.
         description (str): The description of the assignment.
-        github_url (str): The GitHub URL of the assignment.
+        github_url (str): The GitHub URL for the assignment.
         owner_id (int): The ID of the owner of the assignment.
-        owner (relationship): The owner of the assignment.
-        items (relationship): The items belonging to the assignment.
+        owner (User): The owner of the assignment.
+        items (List[Item]): The items associated with the assignment.
+        classroom_id (int): The ID of the classroom the assignment belongs to.
+        classroom (Classroom): The classroom the assignment belongs to.
     """
 
     __tablename__ = "assignments"
@@ -111,7 +117,7 @@ class Assignment(Base):
 
 class Classroom(Base):
     """
-    Represents a classroom in the db.
+    Represents a classroom in the system.
 
     Attributes:
         id (int): The unique identifier of the classroom.
@@ -119,9 +125,9 @@ class Classroom(Base):
         description (str): The description of the classroom.
         year (int): The year of the classroom.
         owner_id (int): The ID of the owner of the classroom.
-        owner (relationship): The owner of the classroom.
-        assignments (relationship): The assignments belonging to the classroom.
-        list_of_students (list): The list of students in the classroom.
+        owner (User): The owner of the classroom.
+        assignments (List[Assignment]): The assignments associated with the classroom.
+        students (List[User]): The students enrolled in the classroom.
     """
 
     __tablename__ = "classrooms"
@@ -163,6 +169,16 @@ class UserClassroom(Base):
 
 
 class Role(Base):
+    """
+    Represents a role in the system.
+
+    Attributes:
+        id (int): The unique identifier for the role.
+        name (str): The name of the role.
+        slug (str): The slug of the role.
+        users (list): The list of users associated with the role.
+    """
+
     __tablename__ = "roles"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
